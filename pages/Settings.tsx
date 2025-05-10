@@ -65,11 +65,7 @@ const Settings = () => {
 
   const { data: userData, isLoading } = useQuery<IUser>({
     queryKey: ['authUser'],
-    queryFn: async () => {
-      const response = await apiRequest("GET", '/api/auth/user');
-      const data = await response.json();
-      return data as IUser;
-    },
+    queryFn: () => apiRequest<IUser>("GET", '/api/auth/user'),
     enabled: authStatus === 'authenticated',
   });
 

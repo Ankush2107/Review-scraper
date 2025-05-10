@@ -22,7 +22,7 @@ interface IUserSessionData {
 const Layout = ({ children }: LayoutProps) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const router = useRouter();
-  const { data: session, status: authStatus } = useSession(); // Get session data
+  const { data: session, status: authStatus } = useSession(); 
   const { toast } = useToast();
 
   const userForDisplay: IUserSessionData | undefined = session?.user;
@@ -41,23 +41,22 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
+  useEffect(() => {
+    if (authStatus === 'loading') return;
+    if (authStatus === 'unauthenticated') {
+      router.push("/login");
+    }
+  }, [authStatus, router]);
 
-  if (authStatus === "loading") {
+  if (authStatus === 'loading' || authStatus === 'unauthenticated') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background dark:bg-background transition-theme">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground dark:text-muted-foreground transition-theme">Loading Application...</p>
+          <p className="mt-4 text-muted-foreground">Loading Application...</p>
         </div>
       </div>
     );
-  }
-
-  if (authStatus === "unauthenticated") {
-   useEffect(() => {
-       router.push("/login");
-   }, [router]);
-   return null; 
   }
 
   const getPageTitle = () => {
@@ -67,7 +66,6 @@ const Layout = ({ children }: LayoutProps) => {
       case "/reviews": return "Manage Reviews";
       case "/settings": return "Settings";
       default:
-        // Attempt to create a title from the path
         const pathParts = router.pathname.split('/').filter(Boolean);
         if (pathParts.length > 0) {
           const lastPart = pathParts[pathParts.length - 1];
@@ -75,7 +73,7 @@ const Layout = ({ children }: LayoutProps) => {
         }
         return "ReviewHub";
     }
-  };
+  }
 
   const userInitials = (userForDisplay?.fullName || userForDisplay?.name || userForDisplay?.username || 'U').charAt(0).toUpperCase();
 
@@ -101,9 +99,9 @@ const Layout = ({ children }: LayoutProps) => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-64 relative bg-background dark:bg-gray-950 transition-colors duration-300">
+      <main className="flex-1 md:ml-64 flex flex-col">
         {/* Mobile Header */}
-        <header className="bg-card dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm py-3 px-4 md:hidden sticky top-0 z-40 transition-colors duration-300">
+        <header className="bg-card text-card-foreground border-b border-border shadow-sm py-3 px-4 md:hidden sticky top-0 z-40">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Button
@@ -134,7 +132,7 @@ const Layout = ({ children }: LayoutProps) => {
         </header>
 
         {/* Top Navigation Bar (Desktop) */}
-        <header className="hidden md:flex items-center justify-between bg-card dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm py-3 px-6 sticky top-0 z-30 transition-colors duration-300">
+        <header className="hidden md:flex items-center justify-between bg-card text-card-foreground border-b border-border shadow-sm py-3 px-6 sticky top-0 z-30">
           <h2 className="text-xl font-heading font-semibold text-foreground dark:text-white">
             {getPageTitle()}
           </h2>
@@ -142,11 +140,11 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative" aria-label="Notifications">
               <i className="fas fa-bell text-lg"></i>
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive animate-pulse"></span>
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-1 ring-white dark:ring-gray-800"></span>
             </Button>
             <ThemeToggle />
               {userForDisplay && ( 
-                <div className="h-9 w-9 rounded-full bg-primary/20 dark:bg-primary/30 flex items-center justify-center text-primary dark:text-primary-foreground text-base font-semibold cursor-pointer" title={userForDisplay.name || userForDisplay.email || ""}>
+                <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-base font-semibold cursor-pointer" title={userForDisplay.name || userForDisplay.email || ""}>
                   {userInitials}
                 </div>
               )}
@@ -154,7 +152,7 @@ const Layout = ({ children }: LayoutProps) => {
         </header>
 
         {/* Content */}
-        <div className="p-4 sm:p-6">
+        <div className="flex-grow p-4 sm:p-6 bg-background text-foreground">
           {children}
         </div>
       </main>

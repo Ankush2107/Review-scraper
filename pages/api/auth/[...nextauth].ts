@@ -1,6 +1,6 @@
 import NextAuth, { type NextAuthOptions, User as NextAuthUser, Account, Profile, JWT } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { getUserByUsername, comparePassword } from '../../../lib/storage';
+import { comparePassword, getUserByEmail } from '../../../lib/storage';
 import dbConnect from '../../../lib/mongodb';
 interface AuthorizeUser {
   id: string;
@@ -15,29 +15,39 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        username: { label: "Username", type: "text" },
+        email: { label: "Email", type: "email", placeholder: "john@example.com" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials): Promise<AuthorizeUser | null> {
         await dbConnect(); 
-        if (!credentials?.username || !credentials.password) { 
+        if (!credentials?.email || !credentials.password) { 
+          console.log("[NextAuth Authorize] Missing email or password");
           return null;
         }
-        const user = await getUserByUsername(credentials.username); 
-        if (!user || !user.password) { 
+        console.log("[NextAuth Authorize] Received credentials:", { email: credentials.email })
+        try {
+          const userFromDb = await getUserByEmail(credentials.email);
+          if (!userFromDb) {
+            return null;
+          }
+          if (!userFromDb.password) {
+            return null;
+          }
+          const isMatch = await comparePassword(credentials.password, userFromDb.password);
+          if (!isMatch) {
+            return null;
+          }
+          return {
+              id: userFromDb._id.toString(),
+              email: userFromDb.email,
+              name: userFromDb.fullName || userFromDb.username,
+              username: userFromDb.username,
+              fullName: userFromDb.fullName,
+          };
+        } catch (dbError) {
+          console.error("[NextAuth Authorize] Database error during authorization:", dbError);
           return null;
         }
-        const isMatch = await comparePassword(credentials.password, user.password);
-        if (!isMatch) {
-          return null;
-        }
-        return { 
-          id: user._id.toString(),
-          email: user.email,
-          name: user.fullName || user.username, 
-          username: user.username,             
-          fullName: user.fullName, 
-        };
     }
     })
   ],
@@ -45,14 +55,13 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, account, profile } : { token: JWT; user?: AuthorizeUser | NextAuthUser; account?: Account | null; profile?: Profile; }): Promise<JWT> {
+    async jwt({ token, user } : { token: JWT; user?: AuthorizeUser | NextAuthUser; account?: Account | null; profile?: Profile; }): Promise<JWT> {
       if (user) { 
         token.id = user.id; 
         token.name = user.name;
         token.email = user.email;
-        const customUser = user as AuthorizeUser;
-        token.username = customUser.username;
-        token.fullName = customUser.fullName;
+        token.username = (user as any).username;
+        token.fullName = (user as any).fullName;
       }
       return token;
     },
@@ -61,8 +70,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.name = token.name;
         session.user.email = token.email;
-        session.user.username = token.username as string | null | undefined; 
-        session.user.fullName = token.fullName as string | null | undefined;
+        (session.user as any).username = token.username as string | null | undefined; 
+        (session.user as any).fullName = token.fullName as string | null | undefined;
       }
       return session;
   }

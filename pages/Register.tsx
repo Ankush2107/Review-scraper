@@ -208,10 +208,8 @@ const onSubmit = async (data: RegisterFormData) => {
           <CardFooter className="flex flex-col space-y-2">
             <div className="text-sm text-center text-muted-foreground dark:text-muted-foreground transition-theme">
               Already have an account?{" "}
-              <Link href="/login" legacyBehavior={false}>
-                <a className="font-medium text-primary hover:underline dark:text-primary-hover">
+              <Link href="/login" className="font-medium text-primary hover:underline dark:text-primary-hover">
                   Sign in
-                </a>
               </Link>
             </div>
           </CardFooter>

@@ -1,12 +1,25 @@
-// REVIEW-NEXTJS/lib/storage.ts
 import dbConnect from './mongodb';
 import UserModel, { IUser } from '../models/User.model';
+
 import BusinessUrlModel, { IBusinessUrl } from '../models/BusinessUrl.model';
 import ReviewBatchModel, { IReviewBatch, IReviewItem } from '../models/Review.model';
 import WidgetModel, { IWidget } from '../models/Widget.model';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { Types, UpdateQuery  } from 'mongoose';
+
+interface IBusinessStats {
+  totalBusinessUrls: number;
+  totalWidgets: number;
+  totalReviews: number;
+  averageRating: number;
+  totalViews: number;
+  reviewsBySource: {
+    google: number;
+    facebook: number;
+  };
+}
+
 async function ensureDbConnected() {
   await dbConnect();
 }
@@ -17,8 +30,33 @@ export const getUserById = async (id: string): Promise<IUser | null> => {
 };
 
 export const getUserByEmail = async (email: string): Promise<IUser | null> => {
-  await ensureDbConnected();
-  return UserModel.findOne({ email: email.toLowerCase() }).select('+password').exec();
+  console.log(`[Storage/getUserByEmail] Attempting to connect to DB...`);
+  await ensureDbConnected(); 
+  console.log(`[Storage/getUserByEmail] DB Connected. Searching for email: "${email}"`);
+  const processedEmail = email.toLowerCase().trim(); 
+  console.log(`[Storage/getUserByEmail] Processed email for query: "${processedEmail}"`);
+  try {
+    const anyUser = await UserModel.findOne().select('+password').lean().exec();
+    console.log(`[Storage/getUserByEmail] Sample user found (test query):`, anyUser ? { email: anyUser.email, _id: anyUser._id } : null);
+    const user = await UserModel.findOne({ email: processedEmail })
+      .select('+password') 
+      .lean() 
+      .exec();
+
+    console.log(`[Storage/getUserByEmail] Mongoose findOne result for "${processedEmail}":`, user);
+    if (user) {
+      console.log(`[Storage/getUserByEmail] User found:`, { _id: user._id, email: user.email, hasPassword: !!user.password });
+      return user as IUser; 
+    } else {
+      console.log(`[Storage/getUserByEmail] No user found with email: "${processedEmail}"`);
+      const allUsers = await UserModel.find({}).select('email fullName').lean().exec();
+      console.log('[Storage/getUserByEmail] All emails in DB:', allUsers.map(u => u.email));
+      return null;
+    }
+  } catch (error) {
+    console.error(`[Storage/getUserByEmail] Error during database query for email "${processedEmail}":`, error);
+    throw error; 
+  }
 };
 
 export const getUserByUsername = async (username: string): Promise<IUser | null> => {
@@ -268,9 +306,20 @@ export const deleteWidget = async (id: string): Promise<{ acknowledged: boolean;
   return WidgetModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
 };
 
-export const getBusinessUrlStats = async (userId: string): Promise<any> => {
+export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStats> => {
   await ensureDbConnected();
-  if (!Types.ObjectId.isValid(userId)) 
+  if (!Types.ObjectId.isValid(userId)) {
+    console.warn(`getBusinessUrlStats: Invalid userId provided: ${userId}`);
+    // Return default empty stats if userId is invalid
+    return {
+      totalBusinessUrls: 0,
+      totalWidgets: 0,
+      totalReviews: 0,
+      averageRating: 0,
+      totalViews: 0,
+      reviewsBySource: { google: 0, facebook: 0 },
+    };
+  }
   const userObjId = new Types.ObjectId(userId);
   const businessUrls = await BusinessUrlModel.find({ userId: userObjId }).lean().exec();
   const totalBusinessUrls = businessUrls.length;
@@ -310,7 +359,7 @@ export const getBusinessUrlStats = async (userId: string): Promise<any> => {
     { $match: { userId: userObjId } },
     { $group: { _id: null, totalViews: { $sum: '$views' } } },
   ]).exec();
-  const totalViews = widgetViewsAgg.length > 0 ? widgetViewsAgg[0].totalViews : 0;
+  const totalViews = widgetViewsAgg.length > 0 && widgetViewsAgg[0].totalViews !== null ? widgetViewsAgg[0].totalViews : 0;
   return {
     totalBusinessUrls,
     totalWidgets,

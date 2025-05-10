@@ -13,7 +13,7 @@ import { signIn } from 'next-auth/react';
 import { useSession } from 'next-auth/react';
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username or Email is required"),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address."), 
   password: z.string().min(1, "Password is required"),
 });
 
@@ -35,21 +35,22 @@ const Login = () => {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
+
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
       const result = await signIn('credentials', {
         redirect: false, 
-        username: data.username,
+        email: data.email,
         password: data.password,
       });
       if (result?.error) {
-        throw new Error(result.error);
+        throw new Error(result.error === "CredentialsSignin" ? "Invalid email or password." : result.error);
       }
       if (result?.ok) {
         toast({
@@ -104,15 +105,17 @@ const Login = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="username"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Enter your username" 
+                          type="email"
+                          placeholder="you@example.com" 
                           {...field} 
                           disabled={isLoading}
+                          autoComplete="email"
                         />
                       </FormControl>
                       <FormMessage />
@@ -160,11 +163,9 @@ const Login = () => {
               Don&apos;t have an account?{" "}
               <Link 
                 href="/register" 
-                legacyBehavior
+                className="text-primary hover:text-primary-hover dark:text-primary dark:hover:text-primary-hover transition-theme font-medium"
               >
-                <a className="text-primary hover:text-primary-hover dark:text-primary dark:hover:text-primary-hover transition-theme font-medium">
                   Sign up
-                </a>
               </Link>
             </div>
           </CardFooter>

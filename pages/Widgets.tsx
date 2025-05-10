@@ -46,19 +46,14 @@ const Widgets = () => {
 
   const { data: widgetsData, isLoading: isWidgetsLoading } = useQuery<{ widgets: IWidget[] }>({
     queryKey: ['widgets'],
-    queryFn: async () => {
-      const response = await apiRequest("GET", '/api/widgets'); 
-      return response.json() as Promise<{ widgets: IWidget[] }>; 
-    },
+    queryFn: () => apiRequest<{ widgets: IWidget[] }>("GET", '/api/widgets'), 
     enabled: authStatus === 'authenticated',
   });
-  const allWidgets = widgetsData?.widgets || [];
+  const allWidgets = widgetsData?.widgets || []; 
+
   const { data: businessUrlsData, isLoading: isBusinessUrlsLoading } = useQuery<{ businessUrls: IBusinessUrlForSelect[] }>({
     queryKey: ['businessUrls'],
-    queryFn: async (): Promise<{ businessUrls: IBusinessUrlForSelect[] }> => {
-      const response = await apiRequest("GET", '/api/business-urls');
-      return response.json(); 
-    },
+    queryFn: () => apiRequest<{ businessUrls: IBusinessUrlForSelect[] }>("GET", '/api/business-urls'),
     enabled: authStatus === 'authenticated',
   });
   const businessUrlsForModal = businessUrlsData?.businessUrls || [];

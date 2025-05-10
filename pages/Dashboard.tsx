@@ -152,7 +152,7 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="mb-8">
-        <h1 className="text-2xl font-heading font-bold text-gray-800 dark:text-white mb-1">
+        <h1 className="text-2xl font-heading font-bold text-gray-800 mb-1">
           Welcome back, {session.user?.name || 'User'}!
         </h1>
         <p className="text-gray-600 dark:text-gray-400">

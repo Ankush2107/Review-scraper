@@ -11,12 +11,10 @@ if (!GOOGLE_APIFY_TOKEN) {
   console.warn("WARNING: GOOGLE_APIFY_API_TOKEN is not set. Google review scraping will likely fail.");
 }
 const googleClient = new ApifyClient({ token: GOOGLE_APIFY_TOKEN || '' });
-
 if (!FACEBOOK_APIFY_TOKEN) {
   console.warn("WARNING: FACEBOOK_APIFY_API_TOKEN is not set. Facebook review scraping will likely fail.");
 }
 const facebookClient = new ApifyClient({ token: FACEBOOK_APIFY_TOKEN || '' });
-
 interface ApifyGoogleReviewItem {
     reviewId?: string;
     id?: string | number;
