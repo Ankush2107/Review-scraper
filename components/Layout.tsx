@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
-import Sidebar from "./Sidebar";
+import Sidebar, { IUserSessionData } from "./Sidebar";
 import { useToast } from "../hooks/use-toast";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "./ui/button";
+import { useTheme } from "next-themes";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,7 @@ const Layout = ({ children }: LayoutProps) => {
   const router = useRouter();
   const { data: session, status: authStatus } = useSession(); 
   const { toast } = useToast();
+  const { resolvedTheme } = useTheme();
 
   const userForDisplay: IUserSessionData | undefined = session?.user;
 
@@ -41,23 +43,7 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
-  useEffect(() => {
-    if (authStatus === 'loading') return;
-    if (authStatus === 'unauthenticated') {
-      router.push("/login");
-    }
-  }, [authStatus, router]);
-
-  if (authStatus === 'loading' || authStatus === 'unauthenticated') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading Application...</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => { if (authStatus === 'loading') return; if (authStatus === 'unauthenticated') { router.push("/login"); } }, [authStatus, router]);
 
   const getPageTitle = () => {
     switch (router.pathname) {
@@ -76,6 +62,28 @@ const Layout = ({ children }: LayoutProps) => {
   }
 
   const userInitials = (userForDisplay?.fullName || userForDisplay?.name || userForDisplay?.username || 'U').charAt(0).toUpperCase();
+
+  
+
+  if (authStatus === 'loading' || authStatus === 'unauthenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading Application...</p>
+        </div>
+      </div>
+    );
+  }
+
+    const isDark = resolvedTheme === 'dark';
+    const mainLayoutBg = isDark ? 'bg-gray-900' : 'bg-slate-100'; 
+    const headerBg = isDark ? 'bg-gray-800' : 'bg-white';
+    const headerText = isDark ? 'text-white' : 'text-gray-800'; 
+    const headerBorder = isDark ? 'border-gray-700' : 'border-slate-200';
+
+    const contentWrapperBg = isDark ? 'bg-gray-900' : 'bg-white'; 
+    const contentWrapperText = isDark ? 'text-gray-200' : 'text-gray-700';
 
   return (
     <div className="flex min-h-screen">
@@ -101,29 +109,29 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Main Content Area */}
       <main className="flex-1 md:ml-64 flex flex-col">
         {/* Mobile Header */}
-        <header className="bg-card text-card-foreground border-b border-border shadow-sm py-3 px-4 md:hidden sticky top-0 z-40">
+        <header className={`shadow-sm py-3 px-4 md:hidden sticky top-0 z-40 border-b ${headerBg} ${headerBorder}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsMobileSidebarOpen(true)}
-                className="text-muted-foreground hover:text-foreground mr-2"
+                className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-muted-foreground hover:text-foreground'} mr-2`}
                 aria-label="Open sidebar"
               >
                 <i className="fas fa-bars text-lg"></i>
               </Button>
               <div className="flex items-center">
-                <span className="text-primary text-2xl mr-2">
+                <span className={`text-2xl mr-2 ${isDark ? 'text-primary' : 'text-primary'}`}>
                   <i className="fas fa-comment-dots"></i>
                 </span>
-                <h1 className="font-heading font-bold text-lg text-foreground dark:text-white">ReviewHub</h1>
+                <h1 className={`font-heading font-bold text-lg ${headerText}`}>ReviewHub</h1>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <ThemeToggle />
               {userForDisplay && (
-                <div className="h-8 w-8 rounded-full bg-primary/20 dark:bg-primary/30 flex items-center justify-center text-primary dark:text-primary-foreground text-sm font-semibold">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${isDark ? 'bg-primary/30 text-primary-foreground' : 'bg-primary/20 text-primary'}`}>
                   {userInitials}
                 </div>
               )}
