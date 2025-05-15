@@ -162,7 +162,7 @@ const Settings = () => {
               </CardHeader>
               <CardContent>
               {isLoading ? (
-                  <div className="space-y-4"> {/* Simplified loading skeleton */}
+                  <div className="space-y-4"> 
                     <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                     <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                     <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
@@ -172,7 +172,7 @@ const Settings = () => {
                   <Form {...profileForm}>
                     <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
                       <FormField control={profileForm.control} name="fullName" render={({ field }) => ( <FormItem> <FormLabel>Full Name</FormLabel> <FormControl><Input placeholder="Your full name" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                      <FormField control={profileForm.control} name="email" render={({ field }) => ( <FormItem> <FormLabel>Email</FormLabel> <FormControl><Input type="email" placeholder="your.email@example.com" {...field} disabled />{/* Typically email is not editable or has special handling */} </FormControl> <FormMessage /> <p className="text-xs text-muted-foreground pt-1">Email cannot be changed.</p> </FormItem> )} />
+                      <FormField control={profileForm.control} name="email" render={({ field }) => ( <FormItem> <FormLabel>Email</FormLabel> <FormControl><Input type="email" placeholder="your.email@example.com" {...field} disabled /></FormControl> <FormMessage /> <p className="text-xs text-muted-foreground pt-1">Email cannot be changed.</p> </FormItem> )} />
                       <FormField control={profileForm.control} name="username" render={({ field }) => ( <FormItem> <FormLabel>Username</FormLabel> <FormControl><Input placeholder="Your unique username" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                       <Button type="submit" className="mt-4" disabled={updateProfileMutation.isPending || !profileForm.formState.isDirty}>
                         {updateProfileMutation.isPending ? (<><i className="fas fa-spinner fa-spin mr-2"></i>Saving...</>) : "Save Changes"}
@@ -206,7 +206,6 @@ const Settings = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
           <TabsContent value="api">
             <Card>
               <CardHeader>

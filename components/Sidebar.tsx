@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { useTheme } from 'next-themes';
 
 export interface IUserSessionData {
   id?: string;
@@ -13,15 +12,16 @@ export interface IUserSessionData {
 
 interface SidebarProps {
   isMobile: boolean;
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   onLogout: () => void;
   user?: IUserSessionData | null;
   currentPath: string;
+  resolvedTheme: "light" | "dark";
 }
 
-const Sidebar = ({ isMobile, isOpen, onClose, onLogout, user, currentPath }: SidebarProps) => {
-  const { resolvedTheme } = useTheme();
+const Sidebar = ({ isMobile, isOpen, onClose, onLogout, user, currentPath, resolvedTheme }: SidebarProps) => {
+  const isDark = resolvedTheme === 'dark';
   const navItems = [
     { label: "Dashboard", icon: "tachometer-alt", href: "/dashboard" },
     { label: "My Widgets", icon: "th-large", href: "/widgets" },
@@ -29,48 +29,38 @@ const Sidebar = ({ isMobile, isOpen, onClose, onLogout, user, currentPath }: Sid
     { label: "Settings", icon: "cog", href: "/settings" },
     { label: "Help & Support", icon: "question-circle", href: "/help" },
   ];
-
   if (isMobile && !isOpen) {
     return null;
   }
-  const isDark = resolvedTheme === 'dark';
-   const sidebarBackgroundColor = isDark ? 'bg-gray-800' : 'bg-slate-50'; 
-  const sidebarTextColor = isDark ? 'text-gray-200' : 'text-slate-700';
-  const sidebarBorderColor = isDark ? 'border-gray-700' : 'border-slate-200';
+  const sidebarBg = isDark ? 'bg-gray-800' : 'bg-slate-50'; 
+  const sidebarText = isDark ? 'text-gray-200' : 'text-slate-700';
+  const sidebarBorder = isDark ? 'border-gray-700' : 'border-slate-200';
 
-  const logoTextColor = isDark ? 'text-white group-hover:text-primary' : 'text-foreground group-hover:text-primary';
-  const logoIconColor = isDark ? 'text-primary' : 'text-primary'; 
+  const logoIconColor = isDark ? 'text-blue-400' : 'text-blue-600'; 
+  const logoTextColor = isDark ? 'text-white group-hover:text-blue-400' : 'text-gray-800 group-hover:text-blue-600';
 
   const navItemBase = "flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-150 group";
-  const navItemInactive = `hover:bg-muted/50 dark:hover:bg-gray-700 ${isDark ? 'text-gray-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`;
+  const navItemInactiveText = isDark ? 'text-gray-400 group-hover:text-white' : 'text-slate-600 group-hover:text-slate-900';
+  const navItemInactiveBgHover = isDark ? 'hover:bg-gray-700' : 'hover:bg-slate-200'; 
+  const navItemActiveClasses = isDark ? 'bg-blue-500/20 text-blue-300 font-semibold' : 'bg-blue-500/10 text-blue-700 font-semibold';
 
-  const navItemActive = `${isDark ? 'bg-primary/20 text-primary-foreground' : 'bg-primary/10 text-primary'}`; 
+  const navIconText = isDark ? 'text-gray-500 group-hover:text-gray-300' : 'text-slate-400 group-hover:text-slate-600';
+  const navIconActiveText = isDark ? 'text-blue-300' : 'text-blue-700';
 
-  const navIconInactive = `${isDark ? 'text-gray-500 group-hover:text-gray-300' : 'text-slate-500 group-hover:text-slate-700'}`;
-  const navIconActive = `${isDark ? 'text-primary-foreground/90' : 'text-primary'}`;
+  const userAvatarBg = isDark ? 'bg-blue-500/30' : 'bg-blue-600/20';
+  const userAvatarText = isDark ? 'text-blue-300' : 'text-blue-600';
+  const userNameTextClass = isDark ? 'text-white' : 'text-gray-900';
+  const userEmailTextClass = isDark ? 'text-gray-400' : 'text-slate-500';
 
-  const userAvatarBg = isDark ? 'bg-primary/30' : 'bg-primary/20';
-  const userAvatarText = isDark ? 'text-primary-foreground' : 'text-primary';
-  const userNameText = isDark ? 'text-white' : 'text-foreground';
-  const userEmailText = isDark ? 'text-gray-400' : 'text-muted-foreground';
-
-  const logoutButtonText = isDark ? 'text-gray-400 hover:text-red-400' : 'text-muted-foreground hover:text-destructive';
-  const logoutButtonBgHover = isDark ? 'hover:bg-red-900/30' : 'hover:bg-destructive/10';
-
-
-  const sidebarBaseStyles = `flex flex-col transition-all duration-300 ease-in-out shadow-lg border-r ${sidebarBackgroundColor} ${sidebarTextColor} ${sidebarBorderColor}`;
+  const logoutButtonClasses = `w-full flex items-center justify-start px-3 py-2.5 ${isDark ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20' : 'text-slate-600 hover:text-red-600 hover:bg-red-500/10'}`;
+  const sidebarContainerClasses = `flex flex-col transition-all duration-300 ease-in-out shadow-lg border-r ${sidebarBg} ${sidebarText} ${sidebarBorder}`;
 
   const sidebarClasses = isMobile
-    ? `fixed inset-0 z-50 w-64 ${sidebarBaseStyles} ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
-    : `w-64 fixed inset-y-0 z-30 hidden md:flex ${sidebarBaseStyles}`;
+    ? `fixed inset-0 z-50 w-64 ${sidebarContainerClasses} ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
+    : `w-64 fixed inset-y-0 z-30 hidden md:flex ${sidebarContainerClasses}`;
 
   const userDisplayName = user?.fullName || user?.name || user?.username || "User";
-  const userInitials = userDisplayName
-    .split(' ')
-    .map((name: string) => name[0])
-    .slice(0, 2) 
-    .join('')
-    .toUpperCase() || 'U';
+  const userInitials = userDisplayName.split(' ').map(name => name[0]).slice(0, 2).join('').toUpperCase() || 'U';
 
   return (
     <>
@@ -88,16 +78,16 @@ const Sidebar = ({ isMobile, isOpen, onClose, onLogout, user, currentPath }: Sid
             <button 
               type="button"
               onClick={onClose}
-              className={`p-1 rounded-md ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`p-1 rounded-md ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-slate-500 hover:text-slate-700'}`}
               aria-label="Close Sidebar"
             >
               <i className="fas fa-times text-xl"></i>
             </button>
           </div>
         )}
-        <div className={`p-4 border-b flex items-center justify-center h-16 ${sidebarBorderColor}`}>
+        <div className={`p-4 border-b flex items-center justify-center h-16 ${sidebarBorder}`}>
           <Link href="/dashboard" className="flex items-center group" >
-              <span className={`text-2xl mr-2 group-hover:scale-110 transition-transform ${logoIconColor}`}>
+              <span className={`${logoIconColor} text-2xl mr-2 group-hover:scale-110 transition-transform`}>
                 <i className="fas fa-comment-dots"></i>
               </span>
               <h1 className={`font-heading font-bold text-xl transition-colors ${logoTextColor}`}>
@@ -109,25 +99,25 @@ const Sidebar = ({ isMobile, isOpen, onClose, onLogout, user, currentPath }: Sid
         {navItems.map((item) => {
           const isActive = currentPath === item.href || (item.href !== "/dashboard" && currentPath.startsWith(item.href));
           return (
-            <Link key={item.href} href={item.href} onClick={isMobile ? onClose : undefined} className={`${navItemBase} ${isActive ? navItemActive : navItemInactive}`}>
-              <i className={`fas fa-${item.icon} w-5 h-5 text-center mr-3 flex-shrink-0 ${isActive ? navIconActive : navIconInactive}`}>
+            <Link key={item.href} href={item.href} onClick={isMobile ? onClose : undefined} className={`${navItemBase} ${isActive ? navItemActiveClasses : `${navItemInactiveText} ${navItemInactiveBgHover}`}`}>
+              <i className={`fas fa-${item.icon} w-5 h-5 text-center mr-3 flex-shrink-0 ${isActive ? navIconActiveText : navIconText}`}>
               </i>
               <span>{item.label}</span>
             </Link>
           );
       })}
         </nav>
-        <div className={`border-t p-4 mt-auto ${sidebarBorderColor}`}>
+        <div className={`border-t p-4 mt-auto ${sidebarBorder}`}>
           {user && ( 
             <div className="flex items-center mb-3">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${userAvatarBg} ${userAvatarText}`}>
                 <span>{userInitials}</span>
               </div>
               <div className="ml-3 min-w-0"> 
-                <p className={`text-sm font-semibold truncate ${userNameText}`} title={userDisplayName}>
+                <p className={`text-sm font-semibold truncate ${userNameTextClass}`} title={userDisplayName}>
                   {userDisplayName}
                 </p>
-                <p className={`text-xs truncate ${userEmailText}`} title={user.email || ""}>
+                <p className={`text-xs truncate ${userEmailTextClass}`} title={user.email || ""}>
                   {user.email || 'No email'}
                 </p>
               </div>
@@ -136,7 +126,7 @@ const Sidebar = ({ isMobile, isOpen, onClose, onLogout, user, currentPath }: Sid
           <Button
             variant="ghost" 
             onClick={onLogout}
-            className={`w-full flex items-center justify-start px-3 py-2.5 ${logoutButtonText} ${logoutButtonBgHover}`}
+            className={logoutButtonClasses}
           >
             <i className="fas fa-sign-out-alt mr-3"></i> Logout
           </Button>

@@ -24,7 +24,6 @@ export default async function handler(
     if (!session || !session.user?.id) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    const userId = session.user.id as string;
     const stats = {
       totalWidgets: 5,
       totalReviews: 150,

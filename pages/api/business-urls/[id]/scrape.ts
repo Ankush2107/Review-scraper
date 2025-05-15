@@ -4,7 +4,6 @@ import { authOptions } from '../../auth/[...nextauth]';
 import * as storage from '../../../../lib/storage';
 import * as apify from '../../../../lib/apify';
 import dbConnect from '../../../../lib/mongodb';
-import { Types } from 'mongoose';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {

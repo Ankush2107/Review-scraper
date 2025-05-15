@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Rating } from "../components/ui/Rating";
 import { formatRating } from "../lib/utils";
 import { useState, useEffect, useMemo } from 'react';
@@ -126,7 +127,7 @@ const EnhancedWidgetPreview = ({
                 {settings.showProfilePictures && (
                   <div className="w-10 h-10 rounded-full border border-border/50 dark:border-border/50 overflow-hidden bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground transition-theme">
                     {review.profilePicture ? (
-                      <img src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
+                      <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
                     ) : (
                       <i className="fas fa-user"></i>
                     )}
@@ -196,7 +197,7 @@ const EnhancedWidgetPreview = ({
                             {settings.showProfilePictures && (
                               <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
                                 {review.profilePicture ? (
-                                  <img src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
+                                  <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
                                     <i className="fas fa-user text-gray-400 dark:text-gray-500"></i>
@@ -265,7 +266,7 @@ const EnhancedWidgetPreview = ({
                 {settings.showProfilePictures && (
                   <div className="w-10 h-10 rounded-full border border-border/50 dark:border-border/50 overflow-hidden bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground transition-theme">
                     {review.profilePicture ? (
-                      <img src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
+                      <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
                     ) : (
                       <i className="fas fa-user"></i>
                     )}
@@ -311,7 +312,7 @@ const EnhancedWidgetPreview = ({
                     {settings.showProfilePictures && (
                       <div className="w-10 h-10 rounded-full border border-border/50 dark:border-border/50 overflow-hidden bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground transition-theme">
                         {review.profilePicture ? (
-                          <img src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
+                          <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
                         ) : (
                           <i className="fas fa-user"></i>
                         )}

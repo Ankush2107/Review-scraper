@@ -47,8 +47,6 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
     showDates: widget.showDates,
     showProfilePictures: widget.showProfilePictures,
   }));
-  
-  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -84,12 +82,12 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
     { name: "Gray", value: "#4A5568" },
   ];
 
-  const handleApplyChanges = () => {
-    toast({
-      title: "Preview Settings Noted", 
-      description: "Customizations are applied to this preview. Save the widget to make them permanent.",
-    });
-  };
+  // const handleApplyChanges = () => {
+  //   toast({
+  //     title: "Preview Settings Noted", 
+  //     description: "Customizations are applied to this preview. Save the widget to make them permanent.",
+  //   });
+  // };
 
   const previewDataForChild: IWidgetPreviewRenderProps = {
     name: widget.name, 

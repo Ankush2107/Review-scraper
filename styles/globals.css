@@ -1,29 +1,28 @@
 @import "tailwindcss";
-
 :root {
-  --background: oklch(1 0 0); 
-  --foreground: oklch(0.129 0.042 264.695); 
+  --background: oklch(1 0 0);                     
+  --foreground: oklch(0.129 0.042 264.695);
 
-  --card: oklch(1 0 0);
+  --card: oklch(1 0 0);                           
   --card-foreground: oklch(0.129 0.042 264.695);
 
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
 
-  --primary: oklch(0.208 0.042 265.755); 
-  --primary-foreground: oklch(0.984 0.003 247.858); 
+  --primary: oklch(0.500 0.15 265); 
+  --primary-foreground: oklch(1 0 0); 
   --secondary: oklch(0.968 0.007 247.896); 
   --secondary-foreground: oklch(0.208 0.042 265.755); 
 
   --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417); 
+  --muted-foreground: oklch(0.45 0.03 250);
   --accent: oklch(0.968 0.007 247.896);
   --accent-foreground: oklch(0.208 0.042 265.755);
 
   --destructive: oklch(0.577 0.245 27.325); 
   --destructive-foreground: 210 40% 98%;
 
-  --border: oklch(0.929 0.013 255.508); 
+  --border: oklch(0.90 0.01 240); 
   --input: oklch(0.929 0.013 255.508); 
   --ring: oklch(0.704 0.04 256.788); 
 
@@ -41,33 +40,39 @@
 
   --sidebar: oklch(0.984 0.003 247.858); 
 
-  --sidebar-foreground: oklch(0.129 0.042 264.695); 
+  --sidebar-background: oklch(0.97 0.005 240);
 
-  --sidebar-primary: oklch(0.208 0.042 265.755); 
+  --sidebar-foreground: oklch(0.2 0.05 240); 
+
+  --sidebar-hover: oklch(0.92 0.02 240);
+
+  --sidebar-primary: oklch(0.45 0.15 260); 
 
   --sidebar-primary-foreground: oklch(0.984 0.003 247.858); 
 
-  --sidebar-accent: oklch(0.968 0.007 247.896); 
+  --sidebar-accent: oklch(0.88 0.05 255);
 
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755); 
 
-  --sidebar-border: oklch(0.929 0.013 255.508); 
+  --sidebar-muted-foreground: oklch(0.45 0.03 250);
+
+  --sidebar-border: oklch(0.90 0.01 240); 
 
   --sidebar-ring: oklch(0.704 0.04 256.788);
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695); 
+  --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
 
-  --card: oklch(0.208 0.042 265.755);
+  --card: oklch(0.208 0.042 265.755); 
   --card-foreground: oklch(0.984 0.003 247.858);
 
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
 
   --primary: oklch(0.929 0.013 255.508); 
-  --primary-foreground: oklch(0.208 0.042 265.755); 
+  --primary-foreground: oklch(0.208 0.042 265.755);
 
   --secondary: oklch(0.279 0.041 260.031); 
   --secondary-foreground: oklch(0.984 0.003 247.858);
@@ -81,7 +86,7 @@
   --destructive: oklch(0.704 0.191 22.216); 
   --destructive-foreground: 210 40% 98%;
 
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(0.2 0.01 255);
   --input: oklch(1 0 0 / 15%); 
   --ring: oklch(0.551 0.027 264.364); 
   --chart-1: oklch(0.488 0.243 264.376); 
@@ -90,17 +95,20 @@
   --chart-4: oklch(0.627 0.265 303.9); 
   --chart-5: oklch(0.645 0.246 16.439); 
   --sidebar: oklch(0.208 0.042 265.755); 
-  --sidebar-foreground: oklch(0.984 0.003 247.858); 
-  --sidebar-primary: oklch(0.488 0.243 264.376); 
+  --sidebar-background: oklch(0.15 0.03 250);  
+  --sidebar-foreground: oklch(0.95 0.005 240); 
+  --sidebar-primary: oklch(1 0 0);
   --sidebar-primary-foreground: oklch(0.984 0.003 247.858); 
-  --sidebar-accent: oklch(0.279 0.041 260.031); 
+  --sidebar-accent: oklch(0.500 0.15 265);
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858); 
-  --sidebar-border: oklch(1 0 0 / 10%); 
+  --sidebar-border: oklch(0.2 0.01 250); 
+   --sidebar-hover: oklch(0.20 0.03 250);
   --sidebar-ring: oklch(0.551 0.027 264.364); 
+  --sidebar-muted-foreground: oklch(0.7 0.02 250);
 }
 body {
-  @apply bg-background text-foreground;
-  font-feature-settings: "rlig" 1, "calt" 1; 
+@apply bg-background text-foreground;
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
 @theme inline {
@@ -147,5 +155,13 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .sidebar-item {
+    @apply flex items-center py-2 px-4 rounded-md transition-colors duration-150 
+           text-[var(--sidebar-muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)];
+  }
+  .sidebar-item-active {
+    @apply flex items-center py-2 px-4 rounded-md transition-colors duration-150
+           bg-[var(--sidebar-accent)] text-[var(--sidebar-primary)] font-semibold;
   }
 }

@@ -1,6 +1,5 @@
 import dbConnect from './mongodb';
 import UserModel, { IUser } from '../models/User.model';
-
 import BusinessUrlModel, { IBusinessUrl } from '../models/BusinessUrl.model';
 import ReviewBatchModel, { IReviewBatch, IReviewItem } from '../models/Review.model';
 import WidgetModel, { IWidget } from '../models/Widget.model';
@@ -19,6 +18,13 @@ interface IBusinessStats {
     facebook: number;
   };
 }
+
+interface ReviewStatItem {
+  _id: 'google' | 'facebook' | null;
+  totalReviewsInSource: number;
+  sumOfRatings: number;
+  countOfRatedReviews: number;
+} 
 
 async function ensureDbConnected() {
   await dbConnect();
@@ -232,7 +238,7 @@ export const getLatestReviews = async (userId: string, limit = 10): Promise<Arra
       results.push(...reviewsFromBatch);
     }
   }
-  results.sort((a, b) => {
+  results.sort(() => {
       return 0; 
   });
   return results.slice(0, limit);
@@ -260,7 +266,7 @@ interface CreateWidgetArgs {
   type?: string;
   maxReviews?: number;
   minRating?: number;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }
 export const createWidget = async (widgetData: CreateWidgetArgs): Promise<IWidget> => {
   await ensureDbConnected();
@@ -278,7 +284,7 @@ interface UpdateWidgetArgs {
   maxReviews?: number;
   minRating?: number;
   businessUrlId?: string;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }
 export const updateWidget = async (id: string, widgetData: UpdateWidgetArgs): Promise<IWidget | null> => {
   await ensureDbConnected();
@@ -286,7 +292,7 @@ export const updateWidget = async (id: string, widgetData: UpdateWidgetArgs): Pr
   const updatePayload: UpdateQuery<IWidget> = { ...widgetData }; 
   updatePayload.updatedAt = new Date();
   if (widgetData.businessUrlId && Types.ObjectId.isValid(widgetData.businessUrlId)) {
-    updatePayload.businessUrlId = new Types.ObjectId(widgetData.businessUrlId) as any; 
+    updatePayload.businessUrlId = new Types.ObjectId(widgetData.businessUrlId); 
   } else if (widgetData.businessUrlId && !Types.ObjectId.isValid(widgetData.businessUrlId)) {
       delete updatePayload.businessUrlId;
       console.warn(`Invalid businessUrlId provided for widget update: ${widgetData.businessUrlId}`);
@@ -310,7 +316,6 @@ export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStat
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(userId)) {
     console.warn(`getBusinessUrlStats: Invalid userId provided: ${userId}`);
-    // Return default empty stats if userId is invalid
     return {
       totalBusinessUrls: 0,
       totalWidgets: 0,
@@ -330,7 +335,7 @@ export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStat
     };
   }
   const businessUrlObjectIds = businessUrls.map(b => b._id);
-  const reviewStats = await ReviewBatchModel.aggregate([
+  const reviewStats = await ReviewBatchModel.aggregate<ReviewStatItem>([
     { $match: { businessUrlId: { $in: businessUrlObjectIds } } },
     { $unwind: '$reviews' },
     {
@@ -346,20 +351,29 @@ export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStat
   let totalSumOfRatings = 0;
   let totalCountOfRatedReviews = 0;
   const reviewsBySource: { google: number; facebook: number } = { google: 0, facebook: 0 };
-  reviewStats.forEach(stat => {
-    totalReviews += stat.totalReviewsInSource;
-    totalSumOfRatings += stat.sumOfRatings;
-    totalCountOfRatedReviews += stat.countOfRatedReviews;
-    if (stat._id === 'google') reviewsBySource.google = stat.totalReviewsInSource;
-    if (stat._id === 'facebook') reviewsBySource.facebook = stat.totalReviewsInSource;
+  reviewStats.forEach((stat: ReviewStatItem) => { 
+    totalReviews += stat.totalReviewsInSource || 0; 
+    totalSumOfRatings += stat.sumOfRatings || 0;
+    totalCountOfRatedReviews += stat.countOfRatedReviews || 0;
+    if (stat._id === 'google') {
+      reviewsBySource.google = stat.totalReviewsInSource || 0;
+    } else if (stat._id === 'facebook') {
+      reviewsBySource.facebook = stat.totalReviewsInSource || 0;
+    }
   });
   const averageRating = totalCountOfRatedReviews > 0 ? totalSumOfRatings / totalCountOfRatedReviews : 0;
   const totalWidgets = await WidgetModel.countDocuments({ userId: userObjId }).exec();
-  const widgetViewsAgg = await WidgetModel.aggregate([
+  interface WidgetViewAggItem {
+    _id: null;              
+    totalViews: number | null;
+  }
+  const widgetViewsAgg = await WidgetModel.aggregate<WidgetViewAggItem>([
     { $match: { userId: userObjId } },
     { $group: { _id: null, totalViews: { $sum: '$views' } } },
   ]).exec();
-  const totalViews = widgetViewsAgg.length > 0 && widgetViewsAgg[0].totalViews !== null ? widgetViewsAgg[0].totalViews : 0;
+    const totalViews = widgetViewsAgg.length > 0 && widgetViewsAgg[0].totalViews !== null
+    ? widgetViewsAgg[0].totalViews
+    : 0;
   return {
     totalBusinessUrls,
     totalWidgets,

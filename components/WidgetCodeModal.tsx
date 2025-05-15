@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,15 +23,12 @@ interface WidgetCodeModalProps {
 
 const WidgetCodeModal = ({ isOpen, onClose, widget }: WidgetCodeModalProps) => {
   const [activeTab, setActiveTab] = useState<"javascript" | "iframe">("javascript");
-  const codeRef = useRef<HTMLPreElement>(null);
   const { toast } = useToast();
 
-  // Get the current domain for embedding
   const domain = typeof window !== 'undefined'
     ? window.location.origin
     : process.env.NEXT_PUBLIC_APP_URL || 'https://your-app-domain.com';
   
-  // Generate embed code
   const javascriptCode = `<!-- ReviewHub Widget (Widget ID: ${widget._id}) -->
   <div id="reviewhub-widget-${widget._id}"></div>
   <script>
@@ -130,7 +127,7 @@ const WidgetCodeModal = ({ isOpen, onClose, widget }: WidgetCodeModalProps) => {
                   Copy
                 </Button>
               </div>
-              <pre ref={codeDisplayRef} className="p-4 text-sm text-slate-100 dark:text-gray-200 overflow-x-auto max-h-[300px]">
+              <pre className="p-4 text-sm text-slate-100 dark:text-gray-200 overflow-x-auto max-h-[300px]">
                 <code>{currentCodeToShow}</code> 
               </pre>
             </div>
@@ -141,7 +138,7 @@ const WidgetCodeModal = ({ isOpen, onClose, widget }: WidgetCodeModalProps) => {
             </p>
           </TabsContent>
         </Tabs>
-          <DialogFooter className="pt-6 sm:justify-between"> {/* Adjusted footer layout */}
+          <DialogFooter className="pt-6 sm:justify-between"> 
               <p className="text-xs text-slate-500 dark:text-gray-400 hidden sm:block">
                   Widget ID: <code className="bg-slate-100 dark:bg-slate-700 p-1 rounded text-xs">{widget._id}</code>
               </p>

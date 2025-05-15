@@ -54,10 +54,18 @@ interface IReviewItem {
   postedAt: string;
   profilePicture?: string;
 }
-interface PreviewDataState {
-  reviews: IReviewItem[];
-  isLoading: boolean;
-  error?: string | null;
+// interface PreviewDataState {
+//   reviews: IReviewItem[];
+//   isLoading: boolean;
+//   error?: string | null;
+// }
+
+interface CreateWidgetModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  businessUrls: IBusinessUrlForSelect[]; 
+  isLoadingBusinessUrls?: boolean;
+  onWidgetCreated: () => void;
 }
 
 export interface IWidgetPreviewData {
@@ -76,15 +84,12 @@ const createWidgetSchema = z.object({
   businessUrlId: z.string().min(1, "Please select a business source."),
   themeColor: z
     .string()
-    .regex(
-      /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
-      "Must be a valid hex color (e.g., #RRGGBB)."
-    ),
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Must be a valid hex color (e.g., #RRGGBB)."),
   layout: z.enum(["grid", "carousel", "list", "masonry", "badge"]),
   minRating: z.number().min(0).max(5, "Rating must be between 0 and 5."),
-  showRatings: z.boolean().default(true),
-  showDates: z.boolean().default(true),
-  showProfilePictures: z.boolean().default(true),
+  showRatings: z.boolean().optional(),
+  showDates: z.boolean().optional(),
+  showProfilePictures: z.boolean().optional(),
 });
 
 type CreateWidgetFormData = z.infer<typeof createWidgetSchema>;
@@ -104,9 +109,9 @@ const CreateWidgetModal = ({
   isLoadingBusinessUrls,
   onWidgetCreated,
 }: CreateWidgetModalProps) => {
-  const [activeTab, setActiveTab] = useState<"settings" | "preview">(
-    "settings"
-  );
+  console.log("CreateWidgetModal - Received businessUrls:", businessUrls); 
+  console.log("CreateWidgetModal - isLoadingBusinessUrls:", isLoadingBusinessUrls);
+  const [activeTab, setActiveTab] = useState<"settings" | "preview">("settings");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm<CreateWidgetFormData>({
@@ -114,7 +119,7 @@ const CreateWidgetModal = ({
     defaultValues: {
       name: "",
       businessUrlId: businessUrls.length > 0 ? businessUrls[0]._id : "",
-      themeColor: "#3182CE", // Blue
+      themeColor: "#3182CE",
       layout: "grid",
       minRating: 0,
       showRatings: true,
@@ -122,6 +127,16 @@ const CreateWidgetModal = ({
       showProfilePictures: true,
     },
   });
+
+    const themeColors = [
+    { name: "Blue", value: "#3182CE" },
+    { name: "Green", value: "#38A169" },
+    { name: "Red", value: "#E53E3E" },
+    { name: "Purple", value: "#805AD5" },
+    { name: "Pink", value: "#D53F8C" },
+    { name: "Gray", value: "#4A5568" },
+  ];
+  
   const selectedBusinessUrlId = form.watch("businessUrlId");
 
   const {
@@ -177,7 +192,13 @@ const CreateWidgetModal = ({
   });
 
   const onSubmit = (data: CreateWidgetFormData) => {
-    createWidgetMutation.mutate(data);
+    const payload = {
+      ...data,
+      showRatings: data.showRatings ?? true,
+      showDates: data.showDates ?? true,
+      showProfilePictures: data.showProfilePictures ?? true,
+    };
+    createWidgetMutation.mutate(payload);
   };
 
   const handleBusinessUrlSelectChange = (value: string) => {
@@ -186,7 +207,7 @@ const CreateWidgetModal = ({
 
   const currentFormValues = form.watch();
   const selectedBusinessUrlObject = businessUrls.find(
-    (b) => b._id === selectedBusinessUrlId
+    (b) => b._id === currentFormValues.businessUrlId
   );
 
   const previewWidgetDataForChild: IWidgetPreviewData = {
@@ -194,9 +215,9 @@ const CreateWidgetModal = ({
     themeColor: currentFormValues.themeColor,
     layout: currentFormValues.layout,
     minRating: currentFormValues.minRating,
-    showRatings: currentFormValues.showRatings,
-    showDates: currentFormValues.showDates,
-    showProfilePictures: currentFormValues.showProfilePictures,
+    showRatings: currentFormValues.showRatings ?? true,
+    showDates: currentFormValues.showDates ?? true,
+    showProfilePictures: currentFormValues.showProfilePictures ?? true,
     businessUrl: selectedBusinessUrlObject,
   };
 
@@ -260,6 +281,7 @@ const CreateWidgetModal = ({
                       <Select
                         onValueChange={handleBusinessUrlSelectChange}
                         value={field.value}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger disabled={isLoadingBusinessUrls}>
@@ -274,8 +296,8 @@ const CreateWidgetModal = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {!isLoadingBusinessUrls &&
-                            businessUrlsForModal.map((business: IBusinessUrlForSelect) => (
+                          {!isLoadingBusinessUrls && businessUrls &&
+                            businessUrls.map((business: IBusinessUrlForSelect) => (
                               <SelectItem
                                 key={business._id}
                                 value={business._id}
@@ -311,16 +333,12 @@ const CreateWidgetModal = ({
                             type="button"
                             key={color.value}
                             title={color.name}
-                            onClick={() =>
-                              form.setValue("themeColor", color.value, {
-                                shouldValidate: true,
-                              })
-                            }
-                            className={`w-7 h-7 rounded-full border-2 hover:opacity-80 transition-opacity ${
-                              field.value === color.value
-                                ? "ring-2 ring-offset-2 dark:ring-offset-slate-900 ring-primary"
-                                : "border-transparent"
-                            }`}
+                            onClick={() => form.setValue('themeColor', color.value, { shouldValidate: true, shouldDirty: true })}
+                            className={`w-7 h-7 rounded-full border-2 hover:opacity-80 transition-opacity 
+                              ${field.value === color.value 
+                                ? 'ring-2 ring-offset-2 dark:ring-offset-slate-900 ring-primary border-primary' 
+                                : 'border-transparent dark:border-slate-700' 
+                              }`}
                             style={{ backgroundColor: color.value }}
                           />
                         ))}{" "}
@@ -469,7 +487,6 @@ const CreateWidgetModal = ({
           <TabsContent value="preview" className="py-6">
             <div className="min-h-[300px] p-4 border border-dashed rounded-md bg-slate-50 dark:bg-slate-800/50">
               {" "}
-              {/* Added min height and bg */}
               {!selectedBusinessUrlId ? (
                 <div className="text-center py-10 flex flex-col items-center justify-center h-full">
                   <i className="fas fa-search text-3xl text-slate-400 mb-4"></i>
@@ -497,7 +514,6 @@ const CreateWidgetModal = ({
             </div>
           </TabsContent>
         </Tabs>
-
         <DialogFooter className="pt-6">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
@@ -510,7 +526,7 @@ const CreateWidgetModal = ({
                 form.trigger().then((isValid) => {
                   if (isValid && selectedBusinessUrlId) {
                     setActiveTab("preview");
-                    fetchReviewsForPreview();
+                    triggerFetchReviewsForPreview();
                   } else if (!selectedBusinessUrlId) {
                     toast({
                       title: "No Business Selected",

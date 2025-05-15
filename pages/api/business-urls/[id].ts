@@ -4,15 +4,20 @@ import { authOptions } from '../auth/[...nextauth]';
 import * as storage from '../../../lib/storage';
 import dbConnect from '../../../lib/mongodb';
 import { Types } from'mongoose';
-import { IBusinessUrl } from '../../../lib/types';
+import { IBusinessUrl } from '@/models/BusinessUrl.model';
+
+interface DetailErrorItem {
+  path?: string | readonly (string | number)[]; 
+  message: string;
+}
 
 interface ErrorResponse {
   message: string;
-  details?: any; 
+  details?: DetailErrorItem[] | Record<string, unknown> | string;
 }
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<IBusinessUrl | ErrorResponse | { message: string }> 
+  res: NextApiResponse<IBusinessUrl | Omit<ErrorResponse, 'details'> | ErrorResponse | { message: string }>
 ) {
   try {
     await dbConnect(); 

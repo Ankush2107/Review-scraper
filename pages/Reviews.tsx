@@ -80,15 +80,10 @@ const Reviews = () => {
 
   const { data: businessUrlsData, isLoading: isBusinessUrlsLoading } = useQuery<{ businessUrls: IBusinessUrl[] }>({
     queryKey: ['businessUrls'],
-    queryFn: async () => {
-      const response = await apiRequest("GET", '/api/business-urls');
-      const data = await response.json();
-      return data as { businessUrls: IBusinessUrl[] };
-    },
+    queryFn: () => apiRequest<{ businessUrls: IBusinessUrl[] }>("GET", '/api/business-urls'),
     enabled: authStatus === 'authenticated'
   });
-const allBusinessUrls = useMemo(() => (businessUrlsData as { businessUrls: IBusinessUrl[] } | undefined)?.businessUrls || [], [businessUrlsData]);
-
+  const allBusinessUrls = useMemo(() => businessUrlsData?.businessUrls || [], [businessUrlsData]);
   const filteredBusinessUrls = useMemo(() => {
     if (activeTab === "all") return allBusinessUrls;
     return allBusinessUrls.filter((url: IBusinessUrl) => url.source === activeTab);
@@ -119,7 +114,7 @@ const allBusinessUrls = useMemo(() => (businessUrlsData as { businessUrls: IBusi
     defaultValues: { name: "", url: "", source: "google" }
   });
 
-  const addBusinessUrlMutation = useMutation<unknown, Error, BusinessUrlFormData>({ // Added types for mutation
+  const addBusinessUrlMutation = useMutation<unknown, Error, BusinessUrlFormData>({ 
     mutationFn: (newData: BusinessUrlFormData) => apiRequest("POST", "/api/business-urls", newData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['businessUrls'] });
@@ -132,19 +127,24 @@ const allBusinessUrls = useMemo(() => (businessUrlsData as { businessUrls: IBusi
     }
   });
 
-  // Scrape reviews mutation
   const scrapeReviewsMutation = useMutation<{ message: string }, Error, string>({ 
     mutationFn: async (businessUrlId: string): Promise<{ message: string }> => {
-      const response = await apiRequest("POST", `/api/business-urls/${businessUrlId}/scrape`);
-      if (!response || !('message' in response) || typeof response.message !== 'string') {
-        throw new Error('Invalid response format');
+      interface ApiScrapeResponse {
+        success: boolean;
+        message: string;
+        reviews?: IReviewItem[]; 
       }
-      return { message: response.message };
+      const result = await apiRequest<ApiScrapeResponse>("POST", `/api/business-urls/${businessUrlId}/scrape`);
+      if (!result || !result.success || typeof result.message !== 'string') {
+        console.error("Invalid scrape response format or scraping failed:", result);
+        throw new Error(result?.message || 'Scraping process reported an issue or returned an invalid format.');
+      }
+      return { message: result.message }; 
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['reviews', selectedBusinessUrl] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] }); // Use array keys if Dashboard uses them
-      queryClient.invalidateQueries({ queryKey: ['latestReviews'] });  // Use array keys
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] }); 
+      queryClient.invalidateQueries({ queryKey: ['latestReviews'] }); 
       toast({ title: "Scraping Initiated", description: data?.message || "Review scraping process started." });
     },
     onError: (error: Error) => {
@@ -156,7 +156,7 @@ const allBusinessUrls = useMemo(() => (businessUrlsData as { businessUrls: IBusi
     addBusinessUrlMutation.mutate(data);
   };
 
-  if (authStatus === 'loading' || authStatus === 'unauthenticated') { // Show loading if not yet authenticated
+  if (authStatus === 'loading' || authStatus === 'unauthenticated') { 
     return (
       <Layout><div className="flex justify-center items-center h-screen"><p>Loading...</p></div></Layout>
     );

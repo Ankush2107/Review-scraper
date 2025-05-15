@@ -1,11 +1,13 @@
-import NextAuth, { type NextAuthOptions, User as NextAuthUser, Account, Profile, JWT } from 'next-auth';
+import NextAuth, { type NextAuthOptions, Account, Profile, Session, User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { comparePassword, getUserByEmail } from '../../../lib/storage';
 import dbConnect from '../../../lib/mongodb';
-interface AuthorizeUser {
+import { JWT } from 'next-auth/jwt';
+
+interface AuthorizeUserResponse { 
   id: string;
   email?: string | null;
-  name?: string | null; 
+  name?: string | null;
   username?: string | null;
   fullName?: string | null;
 }
@@ -18,21 +20,15 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email", placeholder: "john@example.com" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials): Promise<AuthorizeUser | null> {
+      async authorize(credentials): Promise<AuthorizeUserResponse | null> {
         await dbConnect(); 
         if (!credentials?.email || !credentials.password) { 
-          console.log("[NextAuth Authorize] Missing email or password");
           return null;
         }
         console.log("[NextAuth Authorize] Received credentials:", { email: credentials.email })
         try {
           const userFromDb = await getUserByEmail(credentials.email);
-          if (!userFromDb) {
-            return null;
-          }
-          if (!userFromDb.password) {
-            return null;
-          }
+          if (!userFromDb || !userFromDb.password) return null;
           const isMatch = await comparePassword(credentials.password, userFromDb.password);
           if (!isMatch) {
             return null;
@@ -55,23 +51,23 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user } : { token: JWT; user?: AuthorizeUser | NextAuthUser; account?: Account | null; profile?: Profile; }): Promise<JWT> {
+    async jwt({ token, user } : { token: JWT; user?: User | NextAuthUser; account?: Account | null; profile?: Profile; }): Promise<JWT> {
       if (user) { 
         token.id = user.id; 
         token.name = user.name;
         token.email = user.email;
-        token.username = (user as any).username;
-        token.fullName = (user as any).fullName;
+        token.username = user.username;
+        token.fullName = user.fullName;
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: JWT }): Promise<any> { 
+    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> { 
       if (token.id && session.user) {
         session.user.id = token.id as string;
         session.user.name = token.name;
         session.user.email = token.email;
-        (session.user as any).username = token.username as string | null | undefined; 
-        (session.user as any).fullName = token.fullName as string | null | undefined;
+        session.user.username = token.username
+        session.user.fullName = token.fullName
       }
       return session;
   }

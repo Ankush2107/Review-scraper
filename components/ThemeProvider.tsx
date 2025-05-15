@@ -31,81 +31,65 @@ export function ThemeProvider({
   storageKey = "review-hub-theme",
 }: ThemeProviderProps) {
   const [themePreference, setThemePreference] = useState<Theme>(defaultTheme); 
-  const [actualAppliedTheme, setActualAppliedTheme] = useState<"light" | "dark">("light"); 
+   const [actualAppliedTheme, setActualAppliedTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined" && defaultTheme === "system") {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return defaultTheme === "dark" ? "dark" : "light";
+  });
   const [isClientMounted, setIsClientMounted] = useState(false);
 
  useEffect(() => {
     setIsClientMounted(true);
     const storedTheme = localStorage.getItem(storageKey) as Theme | null;
-    let initialUserPreference = defaultTheme;
+    let effectiveInitialPreference = defaultTheme;
     if (storedTheme && ["light", "dark", "system"].includes(storedTheme)) {
-      initialUserPreference = storedTheme;
+      effectiveInitialPreference = storedTheme;
     }
-    if (storedTheme && initialUserPreference !== themePreference) {
-        setThemePreference(initialUserPreference);
-    } else if (!storedTheme && defaultTheme === "system") {
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        setThemePreference("system");
-        setActualAppliedTheme(systemTheme);
-        document.documentElement.classList.remove("light", "dark");
-        document.documentElement.classList.add(systemTheme);
-    } else if (!storedTheme) {
-        setThemePreference(defaultTheme);
-        if (defaultTheme !== "system") {
-            setActualAppliedTheme(defaultTheme);
-            document.documentElement.classList.remove("light", "dark");
-            document.documentElement.classList.add(defaultTheme);
-        }
-    }
+    setThemePreference(effectiveInitialPreference);
   }, [storageKey, defaultTheme]);
 
-  useEffect(() => {
-    // This effect should only run client-side
-    if (!isClientMounted) return;
-
+useEffect(() => {
+    if (!isClientMounted) {
+      return;
+    }
     const root = window.document.documentElement;
     let newResolvedTheme: "light" | "dark";
-
     if (themePreference === "system") {
       newResolvedTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     } else {
-      newResolvedTheme = themePreference;
+      newResolvedTheme = themePreference; 
     }
-
     root.classList.remove("light", "dark");
     root.classList.add(newResolvedTheme);
     setActualAppliedTheme(newResolvedTheme);
-
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleSystemChange = (e: MediaQueryListEvent) => {
-      if (themePreference === "system") { 
+      if (themePreference === "system") {
         const systemResolved = e.matches ? "dark" : "light";
         root.classList.remove("light", "dark");
         root.classList.add(systemResolved);
         setActualAppliedTheme(systemResolved);
       }
     };
-
     mediaQuery.addEventListener("change", handleSystemChange);
     return () => mediaQuery.removeEventListener("change", handleSystemChange);
   }, [themePreference, isClientMounted]);
 
   const handleSetTheme = useCallback((newTheme: Theme) => {
     if (!isClientMounted) {
-        console.warn("Attempted to set theme before client mount completed.");
-        return;
+      console.warn("Attempted to set theme before client hydration completed.");
+      return;
     }
     localStorage.setItem(storageKey, newTheme);
-    setThemePreference(newTheme);
+    setThemePreference(newTheme); 
   }, [storageKey, isClientMounted]);
-
   const contextValue = useMemo(() => ({
     theme: themePreference,
     resolvedTheme: actualAppliedTheme,
     setTheme: handleSetTheme,
-    isMounted: isClientMounted, 
+    isMounted: isClientMounted,
   }), [themePreference, actualAppliedTheme, handleSetTheme, isClientMounted]);
-
   return (
     <ThemeProviderContext.Provider value={contextValue}>
       {children}

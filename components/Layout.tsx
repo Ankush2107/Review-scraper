@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
-import Sidebar, { IUserSessionData } from "./Sidebar";
+import Sidebar from "./Sidebar";
 import { useToast } from "../hooks/use-toast";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "./ui/button";
@@ -16,8 +16,8 @@ interface IUserSessionData {
   email?: string | null;
   image?: string | null;
   id?: string; 
-  username?: string;
-  fullName?: string; 
+  username?: string | null | undefined; 
+  fullName?: string | null | undefined;
 }
 
 const Layout = ({ children }: LayoutProps) => {
@@ -25,7 +25,7 @@ const Layout = ({ children }: LayoutProps) => {
   const router = useRouter();
   const { data: session, status: authStatus } = useSession(); 
   const { toast } = useToast();
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme: nextThemesResolvedTheme } = useTheme();
 
   const userForDisplay: IUserSessionData | undefined = session?.user;
 
@@ -63,40 +63,44 @@ const Layout = ({ children }: LayoutProps) => {
 
   const userInitials = (userForDisplay?.fullName || userForDisplay?.name || userForDisplay?.username || 'U').charAt(0).toUpperCase();
 
-  
+  const sidebarResolvedTheme: "light" | "dark" = nextThemesResolvedTheme === "dark" ? "dark" : "light";
 
   if (authStatus === 'loading' || authStatus === 'unauthenticated') {
+    const initialLoadBg = sidebarResolvedTheme  === 'dark' ? 'bg-gray-900' : 'bg-slate-100'; 
+    const initialLoadText = sidebarResolvedTheme  === 'dark' ? 'text-gray-300' : 'text-gray-700';
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+      <div className={`min-h-screen flex items-center justify-center ${initialLoadBg} ${initialLoadText}`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading Application...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p className={`mt-4 ${initialLoadText}`}>Loading Application...</p>
         </div>
       </div>
     );
   }
 
-    const isDark = resolvedTheme === 'dark';
-    const mainLayoutBg = isDark ? 'bg-gray-900' : 'bg-slate-100'; 
-    const headerBg = isDark ? 'bg-gray-800' : 'bg-white';
-    const headerText = isDark ? 'text-white' : 'text-gray-800'; 
-    const headerBorder = isDark ? 'border-gray-700' : 'border-slate-200';
-
-    const contentWrapperBg = isDark ? 'bg-gray-900' : 'bg-white'; 
-    const contentWrapperText = isDark ? 'text-gray-200' : 'text-gray-700';
+  const isDark = sidebarResolvedTheme  === 'dark';
+  const mainLayoutClasses = `flex min-h-screen ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-slate-100 text-gray-800'}`;
+  const headerClasses = `shadow-sm py-3 px-4 sticky top-0 z-40 border-b ${isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-800 border-slate-200'}`;
+  const mobileHeaderClasses = `${headerClasses} md:hidden`;
+  const desktopHeaderClasses = `hidden md:flex items-center justify-between ${headerClasses.replace('px-4', 'px-6')}`;
+  const contentWrapperClasses = `flex-grow p-4 sm:p-6 ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-800'}`;
+  const primaryTextClass = isDark ? 'text-blue-400' : 'text-blue-600'; 
+  const userAvatarClasses = `h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${isDark ? 'bg-blue-500/30 text-blue-300' : 'bg-blue-500/20 text-blue-600'}`;
+  const desktopUserAvatarClasses = `h-9 w-9 rounded-full flex items-center justify-center text-base font-semibold cursor-pointer ${isDark ? 'bg-blue-500/30 text-blue-300' : 'bg-blue-500/20 text-blue-600'}`;
+  const mutedTextClass = isDark ? 'text-gray-400' : 'text-slate-500';
+  const hoverTextClass = isDark ? 'hover:text-white' : 'hover:text-gray-900';
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar (Desktop) */}
-      <Sidebar 
-        isMobile={false} 
-        onClose={() => {}} 
+    <div className={mainLayoutClasses}>
+      <Sidebar
+        isMobile={false}
+        isOpen={true}
+        onClose={() => {}}
         onLogout={handleLogout}
         user={userForDisplay}
         currentPath={router.pathname}
+        resolvedTheme={sidebarResolvedTheme}
       />
-
-      {/* Sidebar (Mobile) */}
       <Sidebar 
         isMobile={true} 
         isOpen={isMobileSidebarOpen} 
@@ -104,63 +108,49 @@ const Layout = ({ children }: LayoutProps) => {
         onLogout={handleLogout}
         user={userForDisplay} 
         currentPath={router.pathname}
+        resolvedTheme={sidebarResolvedTheme}
       />
-
-      {/* Main Content Area */}
       <main className="flex-1 md:ml-64 flex flex-col">
-        {/* Mobile Header */}
-        <header className={`shadow-sm py-3 px-4 md:hidden sticky top-0 z-40 border-b ${headerBg} ${headerBorder}`}>
+        <header className={mobileHeaderClasses}>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsMobileSidebarOpen(true)}
-                className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-muted-foreground hover:text-foreground'} mr-2`}
+                className={`${mutedTextClass} ${hoverTextClass} mr-2`}
                 aria-label="Open sidebar"
               >
                 <i className="fas fa-bars text-lg"></i>
               </Button>
               <div className="flex items-center">
-                <span className={`text-2xl mr-2 ${isDark ? 'text-primary' : 'text-primary'}`}>
+                <span className={`${primaryTextClass} text-2xl mr-2`}>
                   <i className="fas fa-comment-dots"></i>
                 </span>
-                <h1 className={`font-heading font-bold text-lg ${headerText}`}>ReviewHub</h1>
+                <h1 className={`font-heading font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>ReviewHub</h1>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <ThemeToggle />
-              {userForDisplay && (
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${isDark ? 'bg-primary/30 text-primary-foreground' : 'bg-primary/20 text-primary'}`}>
-                  {userInitials}
-                </div>
-              )}
+              {userForDisplay && (<div className={userAvatarClasses}>{userInitials}</div>)}
             </div>
           </div>
         </header>
-
-        {/* Top Navigation Bar (Desktop) */}
-        <header className="hidden md:flex items-center justify-between bg-card text-card-foreground border-b border-border shadow-sm py-3 px-6 sticky top-0 z-30">
-          <h2 className="text-xl font-heading font-semibold text-foreground dark:text-white">
+        <header className={desktopHeaderClasses}>
+          <h2 className={`text-xl font-heading font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
             {getPageTitle()}
           </h2>
           
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative" aria-label="Notifications">
+            <Button variant="ghost" size="icon" className={`${mutedTextClass} ${hoverTextClass} relative`} aria-label="Notifications">
               <i className="fas fa-bell text-lg"></i>
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-1 ring-white dark:ring-gray-800"></span>
+              <span className={`absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-1 ${isDark ? 'bg-red-500 ring-gray-800' : 'bg-red-500 ring-white'}`}></span>
             </Button>
             <ThemeToggle />
-              {userForDisplay && ( 
-                <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-base font-semibold cursor-pointer" title={userForDisplay.name || userForDisplay.email || ""}>
-                  {userInitials}
-                </div>
-              )}
+              {userForDisplay && (<div className={desktopUserAvatarClasses} title={userForDisplay.name || userForDisplay.email || ""}>{userInitials}</div>)}
           </div>
         </header>
-
-        {/* Content */}
-        <div className="flex-grow p-4 sm:p-6 bg-background text-foreground">
+        <div className={contentWrapperClasses}>
           {children}
         </div>
       </main>

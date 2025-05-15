@@ -34,7 +34,7 @@ const Widgets = () => {
   const [activeTab, setActiveTab] = useState<WidgetTab>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: session, status: authStatus } = useSession();
+  const { status: authStatus } = useSession();
   const router = useRouter();
 
   useEffect(() => {
@@ -49,14 +49,14 @@ const Widgets = () => {
     queryFn: () => apiRequest<{ widgets: IWidget[] }>("GET", '/api/widgets'), 
     enabled: authStatus === 'authenticated',
   });
-  const allWidgets = widgetsData?.widgets || []; 
+  const allWidgets = useMemo(() => widgetsData?.widgets || [], [widgetsData]);
 
   const { data: businessUrlsData, isLoading: isBusinessUrlsLoading } = useQuery<{ businessUrls: IBusinessUrlForSelect[] }>({
     queryKey: ['businessUrls'],
     queryFn: () => apiRequest<{ businessUrls: IBusinessUrlForSelect[] }>("GET", '/api/business-urls'),
     enabled: authStatus === 'authenticated',
   });
-  const businessUrlsForModal = businessUrlsData?.businessUrls || [];
+  const businessUrlsForModal = useMemo(() => businessUrlsData?.businessUrls || [], [businessUrlsData])
   const deleteMutation = useMutation<unknown, Error, string>({ 
     mutationFn: (widgetId: string) => apiRequest("DELETE", `/api/widgets/${widgetId}`),
     onSuccess: () => {
@@ -69,7 +69,10 @@ const Widgets = () => {
     },
   });
   const filteredWidgets = useMemo(() => {
-    if (activeTab === "all") return allWidgets;
+  console.log("Filtering widgets. Active tab:", activeTab, "allWidgets count:", allWidgets.length); // Debug log
+    if (activeTab === "all") {
+      return allWidgets;
+    }
     return allWidgets.filter((widget: IWidget) => widget.businessUrl?.source === activeTab);
   }, [allWidgets, activeTab]);
   const handleWidgetCreated = () => {
@@ -168,12 +171,12 @@ const Widgets = () => {
         </div>
       </div>
       {isCreateModalOpen && (
-         <CreateWidgetModal
-         isOpen={isCreateModalOpen}
-         onClose={() => setIsCreateModalOpen(false)}
-         onWidgetCreated={handleWidgetCreated}
-         businessUrls={businessUrlsForModal} 
-         isLoadingBusinessUrls={isBusinessUrlsLoading}
+        <CreateWidgetModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onWidgetCreated={handleWidgetCreated}
+          businessUrls={businessUrlsForModal} 
+          isLoadingBusinessUrls={isBusinessUrlsLoading}
        />
       )}
     </Layout>
