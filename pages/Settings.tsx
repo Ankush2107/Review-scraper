@@ -106,7 +106,6 @@ const Settings = () => {
 
   const changePasswordMutation = useMutation<PasswordChangeResponse, Error, PasswordFormData>({
     mutationFn: async (data: PasswordFormData): Promise<PasswordChangeResponse> => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { confirmPassword, ...payload } = data; 
         const response = await apiRequest("PUT", "/api/auth/password", payload);
         const result = await response.json();

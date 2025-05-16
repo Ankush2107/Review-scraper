@@ -9,7 +9,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../components/ui/dialog";
-import { useToast } from "../hooks/use-toast";
 import { Button } from "../components/ui/button";
 import WidgetPreview, { IWidgetSettingsFromForm as IWidgetPreviewRenderProps, IReviewItemFromAPI as IReviewItemForPreview } from "./WidgetPreview";
 import { Label } from "../components/ui/label";
@@ -81,23 +80,15 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
     { name: "Pink", value: "#D53F8C" },
     { name: "Gray", value: "#4A5568" },
   ];
-
-  // const handleApplyChanges = () => {
-  //   toast({
-  //     title: "Preview Settings Noted", 
-  //     description: "Customizations are applied to this preview. Save the widget to make them permanent.",
-  //   });
-  // };
-
   const previewDataForChild: IWidgetPreviewRenderProps = {
     name: widget.name, 
-    businessUrl: widget.businessUrl, 
+    businessUrl: widget.businessUrlId, 
     ...customizations,
   };
-
+  console.log("Preview data", previewDataForChild);
   return (
     <Dialog open={isOpen} onOpenChange={(open: unknown) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl sm:max-w-4xl md:max-w-5xl lg:max-w-6xl"> {/* More responsive max width */}
+      <DialogContent className="max-w-3xl sm:max-w-4xl md:max-w-5xl lg:max-w-6xl"> 
         <DialogHeader>
           <DialogTitle>Widget Preview: {widget.name}</DialogTitle>
           <DialogDescription>
@@ -106,12 +97,10 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
         </DialogHeader>
 
         <div className="grid md:grid-cols-3 gap-6 mt-4">
-          {/* Customization Panel */}
-          <div className="md:col-span-1 space-y-6 p-1"> {/* Added p-1 for scrollbar visibility */}
+          <div className="md:col-span-1 space-y-6 p-1"> 
             <h4 className="font-semibold text-lg text-foreground dark:text-white mb-3 border-b pb-2">
               Customize Preview
             </h4>
-            {/* Theme Color */}
             <div>
               <Label className="block text-sm font-medium mb-1.5">Theme Color</Label>
               <div className="flex flex-wrap gap-2">
@@ -131,8 +120,6 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
                 ))}
               </div>
             </div>
-
-            {/* Layout Select */}
             <div>
               <Label className="block text-sm font-medium mb-1.5">Layout</Label>
               <Select
@@ -149,8 +136,6 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Minimum Rating Select */}
              <div>
               <Label className="block text-sm font-medium mb-1.5">Minimum Rating</Label>
                 <Select
@@ -167,8 +152,6 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
                 </Select>
               </div>
           </div>
-
-          {/* Preview Area */}
           <div className="md:col-span-2 bg-slate-100 dark:bg-slate-800 p-4 rounded-lg min-h-[400px] flex items-center justify-center">
             {isLoadingReviews ? (
               <div className="text-center">
@@ -183,7 +166,6 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
             )}
           </div>
         </div>
-
         <DialogFooter className="mt-6">
           <Button type="button" variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>

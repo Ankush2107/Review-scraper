@@ -49,7 +49,6 @@ const Register = () => {
 const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...userData } = data; 
       await apiRequest("POST", "/api/auth/register", userData); 
 
