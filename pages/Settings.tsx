@@ -91,9 +91,8 @@ const Settings = () => {
 
   const updateProfileMutation = useMutation<ProfileUpdateResponse, Error, ProfileFormData>({
     mutationFn: async (data: ProfileFormData) => {
-      const response = await apiRequest("PUT", "/api/auth/profile", data);
-      const result = await response.json();
-      return result as ProfileUpdateResponse;
+      const response = await apiRequest<ProfileUpdateResponse>("PUT", "/api/auth/profile", data);
+      return response;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['authUser'] });
@@ -107,9 +106,8 @@ const Settings = () => {
   const changePasswordMutation = useMutation<PasswordChangeResponse, Error, PasswordFormData>({
     mutationFn: async (data: PasswordFormData): Promise<PasswordChangeResponse> => {
         const { confirmPassword, ...payload } = data; 
-        const response = await apiRequest("PUT", "/api/auth/password", payload);
-        const result = await response.json();
-        return result as PasswordChangeResponse;
+        const response = await apiRequest<PasswordChangeResponse>("PUT", "/api/auth/password", payload);
+        return response;
     },
     onSuccess: (data) => {
       passwordForm.reset();

@@ -18,13 +18,26 @@ interface IBusinessUrlForWidget {
 interface IBusinessUrlForSelect { 
     _id: string;
     name: string;
+    url: string;
     source: 'google' | 'facebook';
 }
 interface IWidget {
   _id: string;
   name: string;
-  type?: string;
-  businessUrl?: IBusinessUrlForWidget; 
+  themeColor: string;
+  type: "grid" | "carousel" | "list" | "masonry" | "badge";
+  minRating: number;
+  maxReviews?: number;
+  showRatings: boolean;
+  showDates: boolean;
+  showProfilePictures: boolean;
+  businessUrlId: string;
+  businessUrl?: IBusinessUrlForWidget;
+  createdAt?: string | Date;
+  averageRating?: number;
+  isActive?: boolean;
+  settings?: Record<string, any>;
+  views?: number;
 }
 
 type WidgetTab = "all" | "google" | "facebook";
@@ -100,7 +113,12 @@ const Widgets = () => {
           </Button>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs 
+            defaultValue="all" 
+            value={activeTab} 
+            onValueChange={(value) => setActiveTab(value as WidgetTab)} 
+            className="w-full"
+          >
             <TabsList className="mb-6">
               <TabsTrigger value="all">All Widgets</TabsTrigger>
               <TabsTrigger value="google">Google</TabsTrigger>

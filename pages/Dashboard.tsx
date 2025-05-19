@@ -24,15 +24,25 @@ interface IStats {
 interface IWidget {
   _id: string;
   name: string;
-  type?: string;
+  themeColor: string;
+  type: "grid" | "carousel" | "list" | "masonry" | "badge";
+  minRating: number;
   maxReviews?: number;
-  minRating?: number;
-  views?: number;
-  businessUrlId?: {
+  showRatings: boolean;
+  showDates: boolean;
+  showProfilePictures: boolean;
+  businessUrlId: string;
+  businessUrl?: {
     _id: string;
-    name: string;
     source: 'google' | 'facebook';
+    name: string;
+    url?: string;
   };
+  createdAt?: string | Date;
+  averageRating?: number;
+  isActive?: boolean;
+  settings?: Record<string, any>;
+  views?: number;
 }
 
 interface IReviewItem {
@@ -289,7 +299,7 @@ const Dashboard = () => {
         <CreateWidgetModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          onSubmit={handleWidgetCreated}
+          onWidgetCreated={handleWidgetCreated}
           businessUrls={businessUrls || []}     
           isLoadingBusinessUrls={isBusinessUrlsLoading} 
         />

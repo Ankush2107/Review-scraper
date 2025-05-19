@@ -1,4 +1,4 @@
-import NextAuth, { type NextAuthOptions, Account, Profile, Session, User } from 'next-auth';
+import NextAuth, { type NextAuthOptions, Account, Profile, Session } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { comparePassword, getUserByEmail } from '../../../lib/storage';
 import dbConnect from '../../../lib/mongodb';
@@ -51,8 +51,8 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, account: _account, profile: _profile } : { token: JWT; user?: AuthorizeReturnUser; account?: Account | null; profile?: Profile }): Promise<JWT> {
-      if (account && user) { 
+    async jwt({ token, user, account: _account, profile: _profile } : { token: JWT; user?: AuthorizeUserResponse; account?: Account | null; profile?: Profile }): Promise<JWT> {
+      if (_account && user) { 
         token.id = user.id;      
         token.name = user.name;  
         token.email = user.email;

@@ -180,7 +180,11 @@ const Reviews = () => {
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
           <div className="p-6">
-          <Tabs defaultValue="all" value={activeTab} onValueChange={(value: "all" | "google" | "facebook") => setActiveTab(value)}>
+          <Tabs 
+            defaultValue="all" 
+            value={activeTab} 
+            onValueChange={(value) => setActiveTab(value as "all" | "google" | "facebook")}
+          >
               <TabsList className="mb-6">
                 <TabsTrigger value="all">All Reviews</TabsTrigger>
                 <TabsTrigger value="google">Google</TabsTrigger>
