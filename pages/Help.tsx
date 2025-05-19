@@ -2,7 +2,6 @@ import Layout from "../components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion";
 import { Button } from "../components/ui/button";
-
 const Help = () => {
   return (
     <Layout>
@@ -295,5 +294,4 @@ const Help = () => {
     </Layout>
   );
 };
-
 export default Help;

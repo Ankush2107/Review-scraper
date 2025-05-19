@@ -14,6 +14,8 @@ import { useToast } from "../hooks/use-toast";
 export interface IWidgetForCodeModal {
   _id: string;
   name: string;
+  themeColor?: string; 
+  layout?: "grid" | "carousel" | "list" | "masonry" | "badge";
 }
 interface WidgetCodeModalProps {
   isOpen: boolean;
@@ -36,16 +38,16 @@ const WidgetCodeModal = ({ isOpen, onClose, widget }: WidgetCodeModalProps) => {
       var el = document.getElementById('reviewhub-widget-${widget._id}');
       if (!el) { console.warn('ReviewHub: Container element for widget ${widget._id} not found.'); return; }
       var script = document.createElement('script');
-      script.src = '${domain}/widget.js'; // Ensure this path is correct
+      script.src = '${domain}/widget.js'; 
       script.async = true;
-      script.defer = true; // Good practice for non-critical scripts
+      script.defer = true; 
       script.onload = function() {
         if (window.ReviewHub && typeof window.ReviewHub.initWidget === 'function') {
           window.ReviewHub.initWidget({
-            containerId: 'reviewhub-widget-${widget._id}', // Pass ID of the container
+            containerId: 'reviewhub-widget-${widget._id}', 
             widgetId: '${widget._id}'
-            // You might pass other widget settings here if your widget.js expects them
-            // e.g., themeColor: '${widget.themeColor}', layout: '${widget.layout}'
+            ${widget.themeColor ? `, themeColor: '${widget.themeColor}'` : ''}
+            ${widget.layout ? `, layout: '${widget.layout}'` : ''}
           });
         } else {
           console.error('ReviewHub: widget.js loaded but ReviewHub.initWidget is not available.');
@@ -56,8 +58,7 @@ const WidgetCodeModal = ({ isOpen, onClose, widget }: WidgetCodeModalProps) => {
       };
       document.head.appendChild(script);
     })();
-  </script>
-  <!-- End ReviewHub Widget -->`;
+  </script>`;
 
   const iframeCode = `<!-- ReviewHub Widget (Widget ID: ${widget._id}) -->
   <iframe

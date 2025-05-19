@@ -27,9 +27,9 @@ export const authOptions: NextAuthOptions = {
         }
         console.log("[NextAuth Authorize] Received credentials:", { email: credentials.email })
         try {
-          const userFromDb = await getUserByEmail(credentials.email);
+          const userFromDb = await getUserByEmail(credentials!.email!);
           if (!userFromDb || !userFromDb.password) return null;
-          const isMatch = await comparePassword(credentials.password, userFromDb.password);
+          const isMatch = await comparePassword(credentials!.password!, userFromDb.password);
           if (!isMatch) {
             return null;
           }
@@ -51,26 +51,26 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user } : { token: JWT; user?: User | NextAuthUser; account?: Account | null; profile?: Profile; }): Promise<JWT> {
-      if (user) { 
-        token.id = user.id; 
-        token.name = user.name;
+    async jwt({ token, user, account: _account, profile: _profile } : { token: JWT; user?: AuthorizeReturnUser; account?: Account | null; profile?: Profile }): Promise<JWT> {
+      if (account && user) { 
+        token.id = user.id;      
+        token.name = user.name;  
         token.email = user.email;
         token.username = user.username;
         token.fullName = user.fullName;
       }
       return token;
     },
-    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> { 
+    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
       if (token.id && session.user) {
-        session.user.id = token.id as string;
+        session.user.id = token.id; 
         session.user.name = token.name;
         session.user.email = token.email;
-        session.user.username = token.username
-        session.user.fullName = token.fullName
+        session.user.username = token.username;
+        session.user.fullName = token.fullName;
       }
       return session;
-  }
+    }
   },
   pages: {
     signIn: '/login', 

@@ -10,30 +10,42 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
-import WidgetPreview, { IWidgetSettingsFromForm as IWidgetPreviewRenderProps, IReviewItemFromAPI as IReviewItemForPreview } from "./WidgetPreview";
+import WidgetPreview, {
+  IWidgetSettingsFromForm as WidgetPreviewInputProps, 
+  IReviewItemFromAPI as ReviewItemForPreviewModal
+} from "./WidgetPreview";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
-export interface IWidgetFromParent {
+export interface IWidgetForPreviewModal  {
   _id: string;
   name: string;
+  businessUrlId: string;
+  businessUrl?: WidgetPreviewInputProps['businessUrl'];
   themeColor: string;
-  layout: "grid" | "carousel" | "list" | "masonry" | "badge"; 
+  layout: "grid" | "carousel" | "list" | "masonry" | "badge";
   minRating: number;
-  maxReviews?: number;
   showRatings: boolean;
   showDates: boolean;
   showProfilePictures: boolean;
-  businessUrlId: string;
+  maxReviews?: number;
 }
 
-interface ICustomizationState extends Omit<IWidgetPreviewRenderProps, 'name' | 'businessUrl'> {
-  ratingDisplay: "stars" | "number" | "stars_number"; 
-}
 interface WidgetPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  widget: IWidgetFromParent;
+  widget: IWidgetForPreviewModal;
+}
+
+interface ICustomizationState {
+  themeColor: string;
+  layout: "grid" | "carousel" | "list" | "masonry" | "badge";
+  minRating: number;
+  showRatings: boolean;
+  showDates: boolean;
+  showProfilePictures: boolean;
+  maxReviews?: number;
+  ratingDisplay?: "stars" | "number" | "stars_number";
 }
 
 const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps) => {
@@ -42,6 +54,7 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
     layout: widget.layout,
     minRating: widget.minRating,
     ratingDisplay: "stars",
+    maxReviews: widget.maxReviews || 10,
     showRatings: widget.showRatings,
     showDates: widget.showDates,
     showProfilePictures: widget.showProfilePictures,
@@ -53,7 +66,8 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
         themeColor: widget.themeColor,
         layout: widget.layout,
         minRating: widget.minRating,
-        ratingDisplay: "stars",
+        ratingDisplay: "stars", 
+        maxReviews: widget.maxReviews || 10,
         showRatings: widget.showRatings,
         showDates: widget.showDates,
         showProfilePictures: widget.showProfilePictures,
@@ -61,15 +75,14 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
     }
   }, [isOpen, widget]);
 
-  const { data: reviewsData, isLoading: isLoadingReviews } = useQuery<{ reviews: IReviewItemForPreview[] }>({
-    queryKey: ['widgetPreviewReviews', widget.businessUrlId], 
+ const { data: reviewsData, isLoading: isLoadingReviews } = useQuery<{ reviews: ReviewItemForPreviewModal[] }>({
+    queryKey: ['widgetPreviewReviews', widget.businessUrlId, customizations.maxReviews],
     queryFn: async () => {
       if (!widget.businessUrlId) return { reviews: [] };
-      return apiRequest<{ reviews: IReviewItemForPreview[] }>("GET", `/api/business-urls/${widget.businessUrlId}/reviews?limit=${customizations.maxReviews || 10}`);
+      return apiRequest<{ reviews: ReviewItemForPreviewModal[] }>("GET", `/api/business-urls/${widget.businessUrlId}/reviews?limit=${customizations.maxReviews || 10}`);
     },
-    enabled: isOpen && !!widget.businessUrlId, 
+    enabled: isOpen && !!widget.businessUrlId,
   });
-
   const reviewsToPreview = reviewsData?.reviews || [];
 
   const themeColors = [
@@ -80,14 +93,19 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
     { name: "Pink", value: "#D53F8C" },
     { name: "Gray", value: "#4A5568" },
   ];
-  const previewDataForChild: IWidgetPreviewRenderProps = {
-    name: widget.name, 
-    businessUrl: widget.businessUrlId, 
-    ...customizations,
+  const dataForActualPreview: WidgetPreviewInputProps = {
+    name: widget.name,
+    businessUrl: widget.businessUrl, 
+    themeColor: customizations.themeColor,
+    layout: customizations.layout,
+    minRating: customizations.minRating,
+    showRatings: customizations.showRatings,
+    showDates: customizations.showDates,
+    showProfilePictures: customizations.showProfilePictures,
+    maxReviews: customizations.maxReviews,
   };
-  console.log("Preview data", previewDataForChild);
   return (
-    <Dialog open={isOpen} onOpenChange={(open: unknown) => { if (!open) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(openValue: boolean) => { if (!openValue) onClose(); }}>
       <DialogContent className="max-w-3xl sm:max-w-4xl md:max-w-5xl lg:max-w-6xl"> 
         <DialogHeader>
           <DialogTitle>Widget Preview: {widget.name}</DialogTitle>
@@ -110,11 +128,7 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
                     key={color.value}
                     title={color.name}
                     onClick={() => setCustomizations(prev => ({ ...prev, themeColor: color.value }))}
-                    className={`w-7 h-7 rounded-full border-2 transition-all 
-                      ${customizations.themeColor === color.value 
-                        ? 'ring-2 ring-offset-2 dark:ring-offset-gray-800 ring-primary border-primary' 
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                      }`}
+                    className={`w-7 h-7 rounded-full border-2 transition-all ${customizations.themeColor === color.value ? 'ring-2 ring-offset-2 dark:ring-offset-gray-800 ring-primary border-primary' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'}`}
                     style={{ backgroundColor: color.value }}
                   />
                 ))}
@@ -122,10 +136,7 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
             </div>
             <div>
               <Label className="block text-sm font-medium mb-1.5">Layout</Label>
-              <Select
-                value={customizations.layout}
-                onValueChange={(value: string) => setCustomizations(prev => ({ ...prev, layout: value as ICustomizationState['layout'] }))}
-              >
+              <Select value={customizations.layout} onValueChange={(value) => setCustomizations(prev => ({ ...prev, layout: value as ICustomizationState['layout'] }))}>
                 <SelectTrigger><SelectValue placeholder="Select layout" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="grid">Grid</SelectItem>
@@ -160,7 +171,7 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
               </div>
             ) : (
               <WidgetPreview
-                widget={previewDataForChild}
+                widget={dataForActualPreview}
                 reviews={reviewsToPreview}
               />
             )}

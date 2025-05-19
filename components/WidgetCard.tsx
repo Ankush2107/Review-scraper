@@ -1,6 +1,6 @@
 import { useState } from "react";
-import WidgetPreviewModal from "./WidgetPreviewModal";
-import WidgetCodeModal from "./WidgetCodeModal";
+import WidgetPreviewModal, { IWidgetForPreviewModal } from "./WidgetPreviewModal";
+import WidgetCodeModal, { IWidgetForCodeModal } from "./WidgetCodeModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,27 +9,35 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"; 
 import { Button } from "../components/ui/button";
-interface IBusinessUrlForWidget {
+interface IBusinessUrlForWidgetCard {
   _id: string;
   source: 'google' | 'facebook';
   name: string;
+  url?: string;
 }
-export interface IWidget { 
+export interface IWidget {
   _id: string;
   name: string;
+  themeColor: string;
+  type: "grid" | "carousel" | "list" | "masonry" | "badge"; 
+  minRating: number;
+  maxReviews?: number;
+  showRatings: boolean;
+  showDates: boolean;
+  showProfilePictures: boolean;
+  businessUrlId: string;
+  businessUrl?: IBusinessUrlForWidgetCard;
   createdAt?: string | Date;
-  businessUrl?: IBusinessUrlForWidget;
   averageRating?: number;
   isActive?: boolean;
-  type?: string; 
-  settings?: Record<string, unknown>;
+  settings?: Record<string, any>;
 }
 
 interface WidgetCardProps {
   widget: IWidget;
-  onDelete?: () => void; 
-  onEdit?: (widgetId: string) => void; 
-  isDeleting?: boolean; 
+  onDelete?: () => void;
+  onEdit?: (widgetId: string) => void;
+  isDeleting?: boolean;
 }
 
 const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) => {
@@ -54,6 +62,32 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
       if (widget.businessUrl?.source === 'facebook') return 'text-blue-600 dark:text-blue-400';
       return 'text-gray-600 dark:text-gray-400';
     };
+
+    const widgetPropsForPreviewModal: IWidgetForPreviewModal = {
+    _id: widget._id,
+    name: widget.name,
+    themeColor: widget.themeColor,
+    layout: widget.type,
+    minRating: widget.minRating,
+    maxReviews: widget.maxReviews,
+    showRatings: widget.showRatings,
+    showDates: widget.showDates,
+    showProfilePictures: widget.showProfilePictures,
+    businessUrlId: widget.businessUrlId,
+    businessUrl: widget.businessUrl ? { 
+        _id: widget.businessUrl._id,
+        name: widget.businessUrl.name,
+        source: widget.businessUrl.source,
+        url: widget.businessUrl.url,
+    } : undefined,
+    };
+
+     const widgetPropsForCodeModal: IWidgetForCodeModal = {
+        _id: widget._id,
+        name: widget.name,
+        themeColor: widget.themeColor,
+        layout: widget.type,
+      };
 
     const ratingToDisplay = widget.averageRating ?? 0;
 
@@ -139,14 +173,14 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
         <WidgetPreviewModal
           isOpen={isPreviewModalOpen}
           onClose={() => setIsPreviewModalOpen(false)}
-          widget={widget}
+          widget={widgetPropsForPreviewModal}
         />
       )}
       {isCodeModalOpen && (
         <WidgetCodeModal
           isOpen={isCodeModalOpen}
           onClose={() => setIsCodeModalOpen(false)}
-          widget={widget}
+          widget={widgetPropsForCodeModal}
         />
       )}
     </>

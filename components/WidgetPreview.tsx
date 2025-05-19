@@ -27,6 +27,7 @@ export interface IWidgetSettingsFromForm {
       url?: string;
       source: 'google' | 'facebook';
   };
+  maxReviews?: number;
 }
 interface WidgetPreviewProps {
   widget: IWidgetSettingsFromForm;

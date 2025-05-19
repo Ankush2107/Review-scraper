@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]'; // Adjust path
+import { authOptions } from '../auth/[...nextauth]'; 
 import dbConnect from '@/lib/mongodb';
 import * as storage from '@/lib/storage';
 import { IReviewItem } from '@/models/Review.model'

@@ -36,27 +36,16 @@ export const getUserById = async (id: string): Promise<IUser | null> => {
 };
 
 export const getUserByEmail = async (email: string): Promise<IUser | null> => {
-  console.log(`[Storage/getUserByEmail] Attempting to connect to DB...`);
   await ensureDbConnected(); 
-  console.log(`[Storage/getUserByEmail] DB Connected. Searching for email: "${email}"`);
   const processedEmail = email.toLowerCase().trim(); 
-  console.log(`[Storage/getUserByEmail] Processed email for query: "${processedEmail}"`);
   try {
-    const anyUser = await UserModel.findOne().select('+password').lean().exec();
-    console.log(`[Storage/getUserByEmail] Sample user found (test query):`, anyUser ? { email: anyUser.email, _id: anyUser._id } : null);
     const user = await UserModel.findOne({ email: processedEmail })
       .select('+password') 
       .lean() 
       .exec();
-
-    console.log(`[Storage/getUserByEmail] Mongoose findOne result for "${processedEmail}":`, user);
     if (user) {
-      console.log(`[Storage/getUserByEmail] User found:`, { _id: user._id, email: user.email, hasPassword: !!user.password });
       return user as IUser; 
     } else {
-      console.log(`[Storage/getUserByEmail] No user found with email: "${processedEmail}"`);
-      const allUsers = await UserModel.find({}).select('email fullName').lean().exec();
-      console.log('[Storage/getUserByEmail] All emails in DB:', allUsers.map(u => u.email));
       return null;
     }
   } catch (error) {
@@ -209,16 +198,12 @@ export const upsertReviews = async (data: UpsertReviewsArgs): Promise<IReviewBat
 export const getLatestReviews = async (userId: string, limit = 10): Promise<Array<IReviewItem & { businessName: string; source: 'google' | 'facebook'; businessUrl: string }>> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(userId)) return [];
-
   const userBusinessUrls = await BusinessUrlModel.find({ userId: new Types.ObjectId(userId) })
     .select('_id name url source')
     .lean()
     .exec();
-
   if (userBusinessUrls.length === 0) return [];
-
   const results: Array<IReviewItem & { businessName: string; source: 'google' | 'facebook'; businessUrl: string }> = [];
-
   for (const bizUrl of userBusinessUrls) {
     const reviewBatch = await ReviewBatchModel.findOne({
       businessUrlId: bizUrl._id,
@@ -227,7 +212,6 @@ export const getLatestReviews = async (userId: string, limit = 10): Promise<Arra
     .sort({ lastScrapedAt: -1 }) 
     .lean()
     .exec();
-
     if (reviewBatch && reviewBatch.reviews) {
       const reviewsFromBatch = reviewBatch.reviews.slice(0, limit).map(r => ({
         ...r,

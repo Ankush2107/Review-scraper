@@ -1,4 +1,3 @@
-// REVIEW-NEXTJS/pages/_app.tsx
 import type { AppProps } from 'next/app';
 import { SessionProvider } from "next-auth/react";
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -10,20 +9,17 @@ import { Toaster } from "@/components/ui/toaster";
 
 function MyApp({ Component, pageProps: { session, ...otherPageProps } }: AppProps) {
   return (
-<SessionProvider session={session}> {/* 'session' is now correctly defined */}
+<SessionProvider session={session}> 
       <QueryClientProvider client={queryClient}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange // This prop is for next-themes, ensure your ThemeProvider supports it or remove
+          disableTransitionOnChange 
         >
-          {/* Change this line: */}
-          {/* <Component {...pageProps} /> */}
-          {/* To this: */}
-          <Component {...otherPageProps} /> {/* Pass the rest of the pageProps */}
+          <Component {...otherPageProps} /> 
           <Toaster />
-          <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+          <ReactQueryDevtools initialIsOpen={false} position="bottom" />
         </ThemeProvider>
       </QueryClientProvider>
     </SessionProvider>

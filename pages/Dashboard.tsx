@@ -142,8 +142,6 @@ const Dashboard = () => {
       </Layout>
     );
   }
-
-  // Derived statistics for display
   const totalWidgetsDisplay = stats?.totalWidgets ?? 0;
   const totalReviewsDisplay = stats?.totalReviews ?? 0;
   const averageRatingDisplay = stats?.averageRating ? stats.averageRating.toFixed(1) : '0.0';

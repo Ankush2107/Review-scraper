@@ -8,8 +8,6 @@ export function cn(...inputs: ClassValue[]) {
 export const formatRating = (value: number): string => {
   return value.toFixed(1);
 };
-
-// Format relative time from now
 export const formatTimeAgo = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
@@ -57,8 +55,6 @@ export const formatTimeAgo = (dateString: string) => {
   
   return "just now";
 };
-
-// Generate URL hash
 export const generateUrlHash = (url: string) => {
   let hash = 0;
   if (url.length === 0) return hash.toString();
@@ -66,13 +62,12 @@ export const generateUrlHash = (url: string) => {
   for (let i = 0; i < url.length; i++) {
     const char = url.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = hash & hash; 
   }
   
   return Math.abs(hash).toString();
 };
 
-// Format number (e.g. 1000 -> 1k)
 export const formatNumber = (num: number) => {
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + 'M';

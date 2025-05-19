@@ -5,7 +5,9 @@ import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
-export interface CommandProps extends React.HTMLAttributes<HTMLDivElement> {
+type CmdkCommandActualProps = React.ComponentPropsWithoutRef<typeof CommandPrimitive>;
+
+export interface CommandProps extends Omit<React.HTMLAttributes<HTMLDivElement>, keyof CmdkCommandActualProps | 'value'>, CmdkCommandActualProps {
   value?: string;
   onValueChange?: (value: string) => void;
   filter?: (value: string, search: string) => number;
@@ -23,40 +25,41 @@ export interface CommandProps extends Omit<React.ComponentPropsWithoutRef<typeof
 const Command = React.forwardRef<
   HTMLDivElement, 
   CommandProps
->(({ className, children, ...cmdkSpecificProps }, ref) => (
+>(({ className, ...props }, ref) => (
   <div
     ref={ref} 
     className={cn(
       "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
       className 
     )}
-  >
-    <CommandPrimitive
-      {...cmdkSpecificProps}
-    >
-      {children}
-    </CommandPrimitive>
-  </div>
+  {...props} 
+  />
 ));
 Command.displayName = "Command";
 
 interface CommandDialogCustomProps extends DialogProps {
-  children?: React.ReactNode;
-  commandProps?: Omit<CommandProps, 'children' | 'className'>; 
-  commandClassName?: string;
+    children?: React.ReactNode;
+    commandProps?: Omit<CommandProps, 'children' | 'className'>;
+    commandClassName?: string;
 }
 
-const CommandDialog = ({ children, commandProps, commandClassName, ...dialogProps  }: CommandDialogCustomProps) => {
+const CommandDialog = ({ children, commandProps, commandClassName, ...dialogProps }: CommandDialogCustomProps) => {
   return (
-    <Dialog {...dialogProps }>
+    <Dialog {...dialogProps}>
       <DialogContent className="overflow-hidden p-0 shadow-lg">
-        <Command {...commandProps} className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5" >
+        <Command
+          {...commandProps}
+          className={cn(
+            "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5",
+            commandClassName
+          )}
+        >
           {children}
         </Command>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
 export interface CommandInputProps extends React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> {
     className?: string;
@@ -174,4 +177,4 @@ export {
   CommandItem,
   CommandShortcut,
   CommandSeparator,
-}
+};
