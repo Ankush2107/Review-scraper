@@ -296,23 +296,21 @@ const CreateWidgetModal = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {!isLoadingBusinessUrls && businessUrls &&
-                            businessUrls.map((business: IBusinessUrlForSelect) => (
-                              <SelectItem
-                                key={business._id}
-                                value={business._id}
-                              >
-                                {business.name} (
-                                {business.source.charAt(0).toUpperCase() +
-                                  business.source.slice(1)}
-                                )
-                              </SelectItem>
-                            ))}
                           {isLoadingBusinessUrls && (
-                            <SelectItem value="loading" disabled>
-                              Loading...
+                            <SelectItem key="loading-placeholder" value="loading-placeholder" disabled>
+                              Loading sources...
                             </SelectItem>
                           )}
+                          {!isLoadingBusinessUrls && businessUrls && businessUrls.length === 0 && (
+                            <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                              No business sources found.
+                            </div>
+                          )}
+                          {!isLoadingBusinessUrls && businessUrls && businessUrls.map((business: IBusinessUrlForSelect) => (
+                              <SelectItem key={business._id} value={business._id}>
+                                  {business.name} ({business.source?.charAt(0).toUpperCase() + business.source?.slice(1)})
+                              </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>{" "}
                       <FormMessage />

@@ -9,7 +9,7 @@ import CreateWidgetModal from "../components/CreateWidgetModal";
 import { useToast } from "../hooks/use-toast";
 import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-
+import { IBusinessUrlDisplay as IBusinessUrlForDropdown } from '@/lib/storage';
 interface IBusinessUrlForWidget { 
   _id: string;
   source: 'google' | 'facebook';
@@ -64,12 +64,15 @@ const Widgets = () => {
   });
   const allWidgets = useMemo(() => widgetsData?.widgets || [], [widgetsData]);
 
-  const { data: businessUrlsData, isLoading: isBusinessUrlsLoading } = useQuery<{ businessUrls: IBusinessUrlForSelect[] }>({
+  const { data: businessUrlsData, isLoading: isBusinessUrlsLoading } = useQuery<{ businessUrls: IBusinessUrlForDropdown[] }>({
     queryKey: ['businessUrls'],
-    queryFn: () => apiRequest<{ businessUrls: IBusinessUrlForSelect[] }>("GET", '/api/business-urls'),
+    queryFn: () => apiRequest<{ businessUrls: IBusinessUrlForDropdown[] }>("GET", '/api/business-urls'),
     enabled: authStatus === 'authenticated',
   });
-  const businessUrlsForModal = useMemo(() => businessUrlsData?.businessUrls || [], [businessUrlsData])
+  const businessUrlsToUse = businessUrlsData?.businessUrls || [];
+  console.log(`[${router.pathname}] businessUrlsData from useQuery:`, businessUrlsData);
+  const derivedBusinessUrls = useMemo(() => businessUrlsData?.businessUrls || [], [businessUrlsData]);
+  console.log(`[${router.pathname}] derivedBusinessUrls:`, derivedBusinessUrls);
   const deleteMutation = useMutation<unknown, Error, string>({ 
     mutationFn: (widgetId: string) => apiRequest("DELETE", `/api/widgets/${widgetId}`),
     onSuccess: () => {
@@ -82,7 +85,7 @@ const Widgets = () => {
     },
   });
   const filteredWidgets = useMemo(() => {
-  console.log("Filtering widgets. Active tab:", activeTab, "allWidgets count:", allWidgets.length); // Debug log
+  console.log("Filtering widgets. Active tab:", activeTab, "allWidgets count:", allWidgets.length);   
     if (activeTab === "all") {
       return allWidgets;
     }
@@ -193,7 +196,7 @@ const Widgets = () => {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onWidgetCreated={handleWidgetCreated}
-          businessUrls={businessUrlsForModal} 
+          businessUrls={derivedBusinessUrls} 
           isLoadingBusinessUrls={isBusinessUrlsLoading}
        />
       )}

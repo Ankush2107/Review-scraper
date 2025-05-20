@@ -75,13 +75,20 @@ const WidgetPreviewModal = ({ isOpen, onClose, widget }: WidgetPreviewModalProps
     }
   }, [isOpen, widget]);
 
- const { data: reviewsData, isLoading: isLoadingReviews } = useQuery<{ reviews: ReviewItemForPreviewModal[] }>({
-    queryKey: ['widgetPreviewReviews', widget.businessUrlId, customizations.maxReviews],
+ const { data: reviewsData, isLoading: isLoadingReviews, error: previewReviewsError, refetch: triggerFetchReviewsForPreview, } = useQuery<{ reviews: ReviewItemForPreviewModal[] }>({
+    queryKey: ['widgetPreviewReviews', selectedBusinessUrlId],
     queryFn: async () => {
-      if (!widget.businessUrlId) return { reviews: [] };
-      return apiRequest<{ reviews: ReviewItemForPreviewModal[] }>("GET", `/api/business-urls/${widget.businessUrlId}/reviews?limit=${customizations.maxReviews || 10}`);
+      if (!selectedBusinessUrlId) { 
+        console.log("[PreviewQuery] No selectedBusinessUrlId, returning empty reviews.");
+        return { reviews: [] };
+      }
+      console.log(`[PreviewQuery] Fetching reviews for ID: ${selectedBusinessUrlId}`);
+      return apiRequest<{ reviews: IReviewItem[] }>(
+        "GET",
+        `/api/business-urls/${selectedBusinessUrlId}/reviews?limit=${customizations.maxReviews || 10}` 
+      );
     },
-    enabled: isOpen && !!widget.businessUrlId,
+    enabled: isOpen && !!selectedBusinessUrlId,
   });
   const reviewsToPreview = reviewsData?.reviews || [];
 

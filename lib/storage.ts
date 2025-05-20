@@ -2,6 +2,8 @@ import dbConnect from './mongodb';
 import UserModel, { IUser } from '../models/User.model';
 import BusinessUrlModel, { IBusinessUrl } from '../models/BusinessUrl.model';
 import ReviewBatchModel, { IReviewBatch, IReviewItem } from '../models/Review.model';
+import GoogleBusinessUrlModel, { IGoogleBusinessUrl } from '../models/GoogleBusinessUrl.model';
+import FacebookBusinessUrlModel, { IFacebookBusinessUrl } from '../models/FacebookBusinessUrl.model';
 import WidgetModel, { IWidget } from '../models/Widget.model';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
@@ -24,11 +26,20 @@ interface ReviewStatItem {
   totalReviewsInSource: number;
   sumOfRatings: number;
   countOfRatedReviews: number;
-} 
+};
+
+export interface IBusinessUrlDisplay {
+    _id: string;
+    name: string;
+    url: string;
+    source: 'google' | 'facebook';
+    userId?: string;
+}
 
 async function ensureDbConnected() {
   await dbConnect();
-}
+};
+
 export const getUserById = async (id: string): Promise<IUser | null> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(id)) return null;
@@ -36,12 +47,12 @@ export const getUserById = async (id: string): Promise<IUser | null> => {
 };
 
 export const getUserByEmail = async (email: string): Promise<IUser | null> => {
-  await ensureDbConnected(); 
-  const processedEmail = email.toLowerCase().trim(); 
+  await ensureDbConnected();
+  const processedEmail = email.toLowerCase().trim();
   try {
     const user = await UserModel.findOne({ email: processedEmail })
-      .select('+password') 
-      .lean() 
+      .select('+password')
+      .lean()
       .exec();
     if (user) {
       return user as IUser; 
@@ -49,14 +60,15 @@ export const getUserByEmail = async (email: string): Promise<IUser | null> => {
       return null;
     }
   } catch (error) {
-    console.error(`[Storage/getUserByEmail] Error during database query for email "${processedEmail}":`, error);
-    throw error; 
+    const typedError = error as Error; 
+    console.error(`[Storage/getUserByEmail] Error for ${processedEmail}:`, typedError.message);
+    throw typedError; 
   }
 };
 
 export const getUserByUsername = async (username: string): Promise<IUser | null> => {
   await ensureDbConnected();
-  return UserModel.findOne({ username }).select('+password').exec();
+  return UserModel.findOne({ username }).select('+password').lean().exec() as Promise<IUser | null>;
 };
 
 interface CreateUserArgs {
@@ -75,7 +87,7 @@ export const createUser = async (userData: CreateUserArgs): Promise<IUser> => {
     ...userData,
     email: userData.email.toLowerCase(),
     password: hashedPassword,
-    isVerified: userData.isVerified === undefined ? true : userData.isVerified, 
+    isVerified: userData.isVerified === undefined ? true : userData.isVerified,
   });
   const savedUser = await userToSave.save();
   const userObject = savedUser.toObject();
@@ -99,10 +111,30 @@ export const getBusinessUrlByUrlHash = async (urlHash: string): Promise<IBusines
   return BusinessUrlModel.findOne({ urlHash }).exec();
 };
 
-export const getBusinessUrlsByUserId = async (userId: string): Promise<IBusinessUrl[]> => {
+export const getBusinessUrlsByUserId = async (userId: string): Promise<IBusinessUrlDisplay[]> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(userId)) return [];
-  return BusinessUrlModel.find({ userId: new Types.ObjectId(userId) }).sort({ addedAt: -1 }).lean().exec();
+
+  const userIdObj = new Types.ObjectId(userId);
+
+  const googleUrls = await GoogleBusinessUrlModel.find({ userId: userIdObj })
+    .select('_id name url source userId') 
+    .sort({ addedAt: -1 })
+    .lean()
+    .exec();
+
+  const facebookUrls = await FacebookBusinessUrlModel.find({ userId: userIdObj })
+    .select('_id name url source userId')
+    .sort({ addedAt: -1 })
+    .lean()
+    .exec();
+
+  const combined = [
+    ...googleUrls.map(doc => ({ ...doc, _id: doc._id.toString(), userId: doc.userId?.toString(), source: 'google' as const })),
+    ...facebookUrls.map(doc => ({ ...doc, _id: doc._id.toString(), userId: doc.userId?.toString(), source: 'facebook' as const }))
+  ];
+  console.log(`[Storage/getBusinessUrlsByUserId] Found ${combined.length} URLs for userId: ${userId}`);
+  return combined;
 };
 
 interface CreateBusinessUrlArgs {
@@ -111,19 +143,49 @@ interface CreateBusinessUrlArgs {
   url: string;
   source: 'google' | 'facebook';
 }
-export const createBusinessUrl = async (data: CreateBusinessUrlArgs): Promise<IBusinessUrl> => {
+
+export const getAllBusinessUrlsForDisplay = async (): Promise<IBusinessUrl[]> => {
+  await ensureDbConnected();
+  const googleUrls = await GoogleBusinessUrlModel.find({}).select('name url source urlHash _id').lean().exec();
+  const facebookUrls = await FacebookBusinessUrlModel.find({}).select('name url source urlHash _id').lean().exec();
+
+  // Add source property if it's missing from old data
+  const processedGoogleUrls = googleUrls.map(doc => ({ ...doc, source: doc.source || 'google' })) as IBusinessUrl[];
+  const processedFacebookUrls = facebookUrls.map(doc => ({ ...doc, source: doc.source || 'facebook' })) as IBusinessUrl[];
+
+  return [...processedGoogleUrls, ...processedFacebookUrls].sort((a, b) => b.addedAt && a.addedAt ? b.addedAt.getTime() - a.addedAt.getTime() : 0);
+};
+export const createBusinessUrl = async (data: CreateBusinessUrlArgs): Promise<IBusinessUrlDisplay> => {
   await ensureDbConnected();
   const urlHash = crypto.createHash('md5').update(data.url).digest('hex');
-  const existingUrl = await BusinessUrlModel.findOne({ urlHash });
-  if (existingUrl) {
-    throw new Error("This business URL has already been added by another user.");
+  const userIdObj = new Types.ObjectId(data.userId);
+
+  const modelData = {
+    name: data.name,
+    url: data.url,
+    urlHash: urlHash,
+    userId: userIdObj,
+    source: data.source, 
+    addedAt: new Date(), 
+  };
+  let newBusinessUrlDoc;
+  if (data.source === 'google') {
+    const existing = await GoogleBusinessUrlModel.findOne({ urlHash: urlHash  }); 
+    if (existing) throw new Error(`This Google URL has already been added.`);
+    newBusinessUrlDoc = await GoogleBusinessUrlModel.create(modelData);
+  } else { 
+    const existing = await FacebookBusinessUrlModel.findOne({ urlHash: urlHash });
+    if (existing) throw new Error(`This Facebook URL has already been added.`);
+    newBusinessUrlDoc = await FacebookBusinessUrlModel.create(modelData);
   }
-  const newBusinessUrl = new BusinessUrlModel({
-    ...data,
-    userId: new Types.ObjectId(data.userId),
-    urlHash,
-  });
-  return newBusinessUrl.save();
+  const result = newBusinessUrlDoc.toObject();
+  return {
+    _id: result._id.toString(),
+    name: result.name,
+    url: result.url,
+    source: result.source,
+    userId: result.userId?.toString(),
+  };
 };
 
 export const updateBusinessUrlScrapedTime = async (id: string): Promise<IBusinessUrl | null> => {
@@ -141,16 +203,39 @@ interface GetReviewsOptions {
   offset?: number;   
   minRating?: number;
 }
+
 export const getReviewBatchForBusinessUrl = async (
-  businessUrlId: string,
-  source: 'google' | 'facebook'
+  businessUrlObjectId: string, 
+  source: 'google' | 'facebook' 
 ): Promise<IReviewBatch | null> => {
   await ensureDbConnected();
-  if (!Types.ObjectId.isValid(businessUrlId)) return null;
-  return ReviewBatchModel.findOne({
-    businessUrlId: new Types.ObjectId(businessUrlId),
-    source: source
-  }).lean().exec();
+  if (!Types.ObjectId.isValid(businessUrlObjectId)) {
+    console.warn(`[Storage/getReviewBatch] Invalid businessUrlObjectId: ${businessUrlObjectId}`);
+    return null;
+  }
+  if (!source) { 
+    console.warn(`[Storage/getReviewBatch] Source is undefined for businessUrlObjectId: ${businessUrlObjectId}`);
+    return null;
+  }
+  console.log(`[Storage/getReviewBatch] Querying for businessUrlId: ${businessUrlObjectId}, source: ${source}`);
+  const ReviewModelToUse = source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
+  try {
+    let reviewBatch = await ReviewModelToUse.findOne({
+      businessUrlId: new Types.ObjectId(businessUrlObjectId), 
+      source: source 
+    })
+    .lean().exec();
+    if (reviewBatch) {
+      console.log(`[Storage/getReviewBatch] Found review batch for businessUrlId ${businessUrlObjectId} with ${reviewBatch.reviews?.length || 0} reviews.`);
+    } else {
+      console.log(`[Storage/getReviewBatch] No review batch found for businessUrlId ${businessUrlObjectId} and source ${source}.`);
+    }
+    return reviewBatch as IReviewBatch | null;
+  } catch (dbError: unknown) {
+    const err = dbError as Error;
+    console.error(`[Storage/getReviewBatch] DB Error for businessUrlId ${businessUrlObjectId}, source ${source}:`, err.message, err.stack);
+    throw new Error(`Database error in getReviewBatchForBusinessUrl: ${err.message}`);
+  }
 };
 export const getFilteredReviewsFromBatch = (
   reviewBatch: IReviewBatch | null,
@@ -180,52 +265,120 @@ interface UpsertReviewsArgs {
 }
 export const upsertReviews = async (data: UpsertReviewsArgs): Promise<IReviewBatch> => {
   await ensureDbConnected();
-  if (!Types.ObjectId.isValid(data.businessUrlId)) throw new Error("Invalid businessUrlId");
-
-  return ReviewBatchModel.findOneAndUpdate(
+  if (!Types.ObjectId.isValid(data.businessUrlId)) throw new Error("Invalid businessUrlId for upsertReviews");
+  const ReviewModelToUse = data.source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
+  return ReviewModelToUse.findOneAndUpdate(
     { businessUrlId: new Types.ObjectId(data.businessUrlId), source: data.source },
     {
-      $set: {
+      $set: { 
         url: data.url,
         urlHash: data.urlHash,
         reviews: data.reviews,
         lastScrapedAt: new Date(),
+        source: data.source, 
+        businessUrlId: new Types.ObjectId(data.businessUrlId) 
       },
     },
     { new: true, upsert: true, setDefaultsOnInsert: true }
   ).exec();
 };
-export const getLatestReviews = async (userId: string, limit = 10): Promise<Array<IReviewItem & { businessName: string; source: 'google' | 'facebook'; businessUrl: string }>> => {
+export const getLatestReviews = async (
+  userId: string,
+  limit = 10
+): Promise<Array<IReviewItem & { businessName: string; source: 'google' | 'facebook' | string; businessUrl?: string }>> => {
+  console.log(`[Storage/getLatestReviews] Attempting for userId: ${userId}, limit: ${limit}`);
   await ensureDbConnected();
-  if (!Types.ObjectId.isValid(userId)) return [];
-  const userBusinessUrls = await BusinessUrlModel.find({ userId: new Types.ObjectId(userId) })
-    .select('_id name url source')
-    .lean()
-    .exec();
-  if (userBusinessUrls.length === 0) return [];
-  const results: Array<IReviewItem & { businessName: string; source: 'google' | 'facebook'; businessUrl: string }> = [];
-  for (const bizUrl of userBusinessUrls) {
-    const reviewBatch = await ReviewBatchModel.findOne({
-      businessUrlId: bizUrl._id,
-      source: bizUrl.source,
-    })
-    .sort({ lastScrapedAt: -1 }) 
-    .lean()
-    .exec();
-    if (reviewBatch && reviewBatch.reviews) {
-      const reviewsFromBatch = reviewBatch.reviews.slice(0, limit).map(r => ({
-        ...r,
-        businessName: bizUrl.name,
-        source: bizUrl.source,
-        businessUrl: bizUrl.url,
-      }));
-      results.push(...reviewsFromBatch);
-    }
+
+  if (!Types.ObjectId.isValid(userId)) {
+    console.warn(`[Storage/getLatestReviews] Invalid userId: ${userId}`);
+    return [];
   }
-  results.sort(() => {
-      return 0; 
-  });
-  return results.slice(0, limit);
+  const userIdObj = new Types.ObjectId(userId);
+  console.log(`[Storage/getLatestReviews] Converted userId to ObjectId: ${userIdObj}`);
+
+  try {
+    console.log(`[Storage/getLatestReviews] Fetching GoogleBusinessUrls for userId: ${userIdObj}`);
+    const userGoogleBusinessUrls = await GoogleBusinessUrlModel.find({ userId: userIdObj })
+      .select('_id name url source urlHash addedAt') // Ensure urlHash is selected for old review lookup
+      .lean().exec();
+    console.log(`[Storage/getLatestReviews] Found ${userGoogleBusinessUrls.length} Google URLs.`);
+
+    console.log(`[Storage/getLatestReviews] Fetching FacebookBusinessUrls for userId: ${userIdObj}`);
+    const userFacebookBusinessUrls = await FacebookBusinessUrlModel.find({ userId: userIdObj })
+      .select('_id name url source urlHash addedAt') // Ensure urlHash is selected
+      .lean().exec();
+    console.log(`[Storage/getLatestReviews] Found ${userFacebookBusinessUrls.length} Facebook URLs.`);
+
+    const allUserBusinessUrls = [
+        ...(userGoogleBusinessUrls as IBusinessUrl[]), // Cast to ensure type compatibility
+        ...(userFacebookBusinessUrls as IBusinessUrl[])
+    ];
+    console.log(`[Storage/getLatestReviews] Total business URLs for user: ${allUserBusinessUrls.length}`);
+
+    if (allUserBusinessUrls.length === 0) {
+      console.log("[Storage/getLatestReviews] No business URLs found for user, returning empty array.");
+      return [];
+    }
+
+    const results: Array<IReviewItem & { businessName: string; source: 'google' | 'facebook' | string; businessUrl?: string }> = [];
+
+    for (const bizUrl of allUserBusinessUrls) {
+      if (!bizUrl._id) {
+        console.warn("[Storage/getLatestReviews] Skipping bizUrl due to missing _id:", bizUrl);
+        continue;
+      }
+      // Ensure bizUrl.source is reliable, default if necessary for model selection
+      const source = bizUrl.source || (bizUrl.url.includes('facebook.com') ? 'facebook' : 'google');
+      console.log(`[Storage/getLatestReviews] Processing bizUrl: "${bizUrl.name}" (ID: ${bizUrl._id}, Source: ${source}, Hash: ${bizUrl.urlHash})`);
+
+      const ReviewModelToUse = source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
+
+      let reviewBatch = await ReviewModelToUse.findOne({ businessUrlId: bizUrl._id }) // Try new link
+        .sort({ lastScrapedAt: -1 })
+        .lean().exec();
+
+      if (!reviewBatch && bizUrl.urlHash) { // Fallback to old link
+        console.log(`[Storage/getLatestReviews] No batch by businessUrlId for "${bizUrl.name}", trying urlHash: ${bizUrl.urlHash}`);
+        reviewBatch = await ReviewModelToUse.findOne({ urlHash: bizUrl.urlHash })
+          .sort({ lastScrapedAt: -1 }) // or timestamp for google old data
+          .lean().exec();
+      }
+
+      if (reviewBatch && reviewBatch.reviews && reviewBatch.reviews.length > 0) {
+        console.log(`[Storage/getLatestReviews] Found ${reviewBatch.reviews.length} reviews in batch for "${bizUrl.name}"`);
+        const reviewsFromBatch = reviewBatch.reviews.map(r => ({
+          ...r,
+          businessName: bizUrl.name,
+          source: source, // Use determined source
+          businessUrl: bizUrl.url,
+        }));
+        results.push(...reviewsFromBatch);
+      } else {
+        console.log(`[Storage/getLatestReviews] No reviews in batch for "${bizUrl.name}" (Source: ${source})`);
+      }
+    }
+
+    console.log(`[Storage/getLatestReviews] Total reviews collected before sort/limit: ${results.length}`);
+
+    results.sort((a, b) => {
+      const dateA = a.scrapedAt || (a.postedAt && !isNaN(new Date(a.postedAt).getTime()) ? new Date(a.postedAt) : null);
+      const dateB = b.scrapedAt || (b.postedAt && !isNaN(new Date(b.postedAt).getTime()) ? new Date(b.postedAt) : null);
+      if (dateA && dateB) {
+        return dateB.getTime() - dateA.getTime(); // Most recent first
+      }
+      if (dateA) return -1; // Put items with dates first
+      if (dateB) return 1;
+      return 0;
+    });
+
+    console.log(`[Storage/getLatestReviews] Returning ${results.slice(0, limit).length} reviews after slicing.`);
+    return results.slice(0, limit);
+
+  } catch (dbError: unknown) {
+    const err = dbError as Error;
+    console.error(`[Storage/getLatestReviews] DB Error for userId ${userId}:`, err.message, err.stack);
+    throw new Error(`Database error in getLatestReviews: ${err.message}`); // Re-throw a new error or the original
+  }
 };
 export const getWidgetById = async (id: string): Promise<IWidget | null> => {
   await ensureDbConnected();
@@ -366,4 +519,4 @@ export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStat
     totalViews,
     reviewsBySource,
   };
-};
+}
