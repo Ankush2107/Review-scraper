@@ -477,25 +477,21 @@ const CreateWidgetModal = ({
           </TabsContent>
 
           <TabsContent value="preview" className="py-6">
-            <div className="min-h-[300px] p-4 border border-dashed rounded-md bg-slate-50">
+            <div className="min-h-[300px] max-h-[60vh] sm:min-h-[400px] md:min-h-[450px] p-4 border border-dashed border-border rounded-lg bg-slate-100 dark:bg-slate-800/50 overflow-auto flex flex-col items-center justify-start">
               {" "}
               {!selectedBusinessUrlId ? (
-                <div className="text-center py-10 flex flex-col items-center justify-center h-full">
-                  <i className="fas fa-search text-3xl text-slate-400 mb-4"></i>
-                  <p className="text-slate-500">
-                    Select a business source in settings to see a preview.
-                  </p>
+                <div className="text-center py-10 flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <i className="fas fa-search text-3xl mb-4"></i>
+                  <p>Select a business source in settings to see a preview.</p>
                 </div>
               ) : isPreviewReviewsLoading ? (
-                <div className="text-center py-10 flex flex-col items-center justify-center h-full">
+                <div className="text-center py-10 flex flex-col items-center justify-center h-full text-muted-foreground">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                  <p className="mt-3 text-slate-600">
-                    Loading preview...
-                  </p>
+                  <p className="mt-3">Loading Reviews for Preview...</p>
                 </div>
               ) : previewReviewsError ? (
-                <div className="text-center py-10 text-red-500">
-                  Error loading preview. Please try again.
+                <div className="text-center py-10 text-destructive">
+                  Error loading preview: {(previewReviewsError as Error).message}. Please try again.
                 </div>
               ) : (
                 <WidgetPreview

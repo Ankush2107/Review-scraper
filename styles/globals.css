@@ -164,4 +164,7 @@ body {
     @apply flex items-center py-2 px-4 rounded-md transition-colors duration-150
            bg-[var(--sidebar-accent)] text-[var(--sidebar-primary)] font-semibold;
   }
+  .break-inside-avoid-column {
+  break-inside: avoid-column;
+}
 }

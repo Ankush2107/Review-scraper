@@ -115,7 +115,7 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
                 <i className="fas fa-eye mr-2 h-4 w-4" /> Preview
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsCodeModalOpen(true)}>
-                <i className="fas fa-code mr-2 h-4 w-4" /> Get Code
+                <i className="fas fa-code mr-2 h-4 w-4 text-gray-800" /> Get Code
               </DropdownMenuItem>
               {onEdit && ( 
                 <DropdownMenuItem onClick={() => onEdit(widget._id)}>

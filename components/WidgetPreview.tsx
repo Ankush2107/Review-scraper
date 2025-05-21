@@ -1,11 +1,19 @@
-import Image from "next/image";
 import { Rating } from "../components/ui/Rating";
 import { formatRating } from "../lib/utils";
-import { useState } from "react";
+import { useMemo } from "react";
+import SingleReviewCard from "./SingleReviewCard";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  type CarouselApi
+} from "./ui/carousel";
 
 export interface IReviewItemFromAPI {
   _id?: string;
-  reviewId?: string;
+  reviewId?: string; 
   author: string;
   content: string;
   rating?: number;
@@ -31,426 +39,182 @@ export interface IWidgetSettingsFromForm {
   maxReviews?: number;
 }
 interface WidgetPreviewProps {
-  widget: IWidgetSettingsFromForm;
+  widget: IWidgetSettingsFromForm; 
   reviews: IReviewItemFromAPI[];
-  customizations?: {
-    themeColor?: string;
-    layout?: string;
-    minRating?: number;
-    showRatings?: boolean;
-    showDates?: boolean;
-    showProfilePictures?: boolean;
-  };
 }
 
 const WidgetPreview = ({ 
   widget, 
-  reviews, 
-  customizations 
+  reviews 
 }: WidgetPreviewProps) => {
-  const settings = {
-    themeColor: customizations?.themeColor || widget.themeColor,
-    layout: customizations?.layout || widget.layout,
-    minRating: customizations?.minRating !== undefined ? customizations.minRating : widget.minRating,
-    showRatings: customizations?.showRatings !== undefined ? customizations.showRatings : widget.showRatings,
-    showDates: customizations?.showDates !== undefined ? customizations.showDates : widget.showDates,
-    showProfilePictures: customizations?.showProfilePictures !== undefined ? customizations.showProfilePictures : widget.showProfilePictures,
+  const settings = widget;
+  const MAX_PREVIEW_ITEMS = widget.maxReviews || 10;
+
+  const filteredReviews = useMemo(() => {
+    return reviews
+      .filter(review => review.rating === undefined || review.rating === null || review.rating >= settings.minRating)
+      .slice(0, MAX_PREVIEW_ITEMS); 
+  }, [reviews, settings.minRating, MAX_PREVIEW_ITEMS]);
+
+  const avgRating = useMemo(() => {
+    const ratedReviews = filteredReviews.filter(r => typeof r.rating === 'number');
+    if (ratedReviews.length === 0) return 0;
+    return ratedReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / ratedReviews.length;
+  }, [filteredReviews]);
+
+  const colorStyle = { "--widget-theme-color": settings.themeColor || "#3B82F6" } as React.CSSProperties;
+
+  const source = settings.businessUrl?.source || "google";
+  const businessName = settings.businessUrl?.name || "Business Name";
+  const sourceIcon = source === 'google' ? 'fab fa-google' : 'fab fa-facebook-f';
+  const sourceIconColor = source === 'google' ? 'text-red-500' : 'text-blue-600';
+
+ const getReviewKey = (review: IReviewItemFromAPI, index: number): string => {
+    return review._id || review.reviewId || `review-${index}`;
   };
 
-  const filteredReviews = reviews.filter(review => 
-    !review.rating || review.rating >= settings.minRating
+  const displaySettingsForCard = {
+    showRatings: settings.showRatings,
+    showDates: settings.showDates,
+    showProfilePictures: settings.showProfilePictures,
+    themeColor: settings.themeColor,
+  };
+
+  const NoFilteredReviews = () => (
+    <div style={colorStyle} className="text-center py-10 text-muted-foreground">
+        <i className="fas fa-filter text-3xl mb-4"></i>
+        <h4 className="font-semibold text-lg text-foreground">No Reviews Match Filters</h4>
+        <p className="text-sm">Try adjusting the minimum rating in the settings.</p>
+    </div>
   );
-
-  const avgRating = filteredReviews.length > 0 && filteredReviews.some(r => r.rating) 
-    ? filteredReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / 
-      filteredReviews.filter(r => r.rating).length 
-    : 0;
-
-  const colorStyle = {
-    "--widget-theme-color": settings.themeColor,
-  } as React.CSSProperties;
-
-  const source = widget.businessUrl?.source || "google";
-  const businessName = widget.businessUrl?.name || "Business Name";
-
-  const ReviewCardItem = ({ review, settings }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  constcontent = review.content || "";
-  const canReadMore = content.length > 150;
   return (
     <div 
-      className="border border-border rounded-lg p-6 mb-5 bg-card transition-theme"
+      className="w-full max-w-full border border-border rounded-lg p-3 sm:p-4 bg-card text-card-foreground transition-theme"
       style={colorStyle}
     >
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground transition-theme">
-            <i className={`fab fa-${source === 'google' ? 'google' : 'facebook-f'} text-lg`}></i>
-          </div>
-          <div className="ml-3">
-            <h4 className="font-semibold text-card-foreground  transition-theme">{businessName}</h4>
-            <div className="flex items-center">
-              <Rating value={avgRating} size="lg" />
-              <span className="ml-2 text-sm text-card-muted-foreground transition-theme">
-                {formatRating(avgRating)} out of 5
-              </span>
+      {settings.layout !== 'badge' && (
+        <div className="flex flex-col xs:flex-row items-center justify-between mb-4">
+          <div className="flex items-center">
+            <div className={`w-10 h-10 rounded-lg bg-[var(--widget-theme-color)]/20 flex items-center justify-center text-[var(--widget-theme-color)]`}>
+              <i className={`${sourceIcon} text-xl`}></i> 
             </div>
-          </div>
-        </div>
-        <div className="flex items-center">
-          <span className="text-card-muted-foreground text-sm transition-theme">
-            Based on {filteredReviews.length} reviews
-          </span>
-          <div className="w-6 h-6 flex items-center justify-center">
-            <i className={`fab fa-${source === 'google' ? 'google' : 'facebook-f'} text-[var(--widget-theme-color)]`}></i>
-          </div>
-        </div>
-      </div>
-      {settings.layout === 'grid' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          {filteredReviews.slice(0, 6).map((review, index) => (
-            <div key={review._id || index} className="bg-accent/50 shadow-sm rounded-lg p-4 transition-theme border border-border/50">
-              <div className="flex items-center mb-3">
-                {settings.showProfilePictures && (
-                  <div className="w-10 h-10 rounded-full border border-border/50 overflow-hidden bg-muted flex items-center justify-center text-muted-foreground transition-theme">
-                    {review.profilePicture ? (
-                      <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" width={40} height={40} />
-                    ) : (
-                      <i className="fas fa-user"></i>
-                    )}
-                  </div>
-                )}
-                <div className="ml-3">
-                  <h5 className="font-semibold text-card-foreground  text-sm transition-theme">{review.author}</h5>
-                  {settings.showDates && (
-                    <span className="text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
-                  )}
-                </div>
-              </div>
-              {settings.showRatings && (
-                <div className="flex mb-2">
-                  {review.rating ? (
-                    <Rating value={review.rating} size="sm" />
-                  ) : review.recommendationStatus === 'recommended' ? (
-                    <span className="text-success text-xs font-medium transition-theme">
-                      <i className="fas fa-thumbs-up mr-1"></i> Recommended
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground text-xs transition-theme">No Rating</span>
-                  )}
+            <div className="ml-3">
+              <h4 className="font-semibold text-base text-foreground truncate" title={businessName}>{businessName}</h4>
+              {filteredReviews.length > 0 && ( 
+                <div className="flex items-center">
+                  <Rating value={avgRating} size="xs" /> 
+                  <span className="ml-1.5 text-xs text-muted-foreground">
+                    {formatRating(avgRating)} ({filteredReviews.length} reviews)
+                  </span>
                 </div>
               )}
-              <p className="text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
             </div>
+          </div>
+          {widget.businessUrl?.url && ( 
+            <a
+              href={widget.businessUrl.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 xs:mt-0 text-xs text-[var(--widget-theme-color)] hover:underline font-medium"
+            >
+              View on {source.charAt(0).toUpperCase() + source.slice(1)}
+              <i className="fas fa-external-link-alt ml-1 text-xs"></i>
+            </a>
+          )}
+        </div>
+      )}
+      {filteredReviews.length === 0 && settings.layout !== 'badge' && <NoFilteredReviews />}
+      {settings.layout === 'grid' && filteredReviews.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"> 
+          {filteredReviews.map((review, index) => (
+            <SingleReviewCard key={getReviewKey(review, index)} review={review} displaySettings={displaySettingsForCard} sourcePlatform={source} />
           ))}
         </div>
       )}
-      {settings.layout === 'carousel' && (
-        <div className="mb-4">
-          <div className="relative w-full">
-            <button
-              onClick={() => {
-                const carousel = document.getElementById('reviewCarousel');
-                if (carousel) {
-                  const slide = carousel.querySelector('.carousel-slide');
-                  if (slide) {
-                    const width = (slide as HTMLElement).offsetWidth; 
-                    const currentTransform = carousel.style.transform || 'translateX(0px)';
-                    const currentOffset = parseInt(currentTransform.replace(/[^\d-]/g, '') || '0');
-                    const newOffset = Math.min(0, currentOffset + width);
-                    carousel.style.transform = `translateX(${newOffset}px)`;
-                  }
-                }
-              }}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-md border border-gray-200"
-              aria-label="Previous review"
-            >
-              <i className="fa fa-chevron-left"></i>
-            </button>
-            <div className="overflow-hidden px-8">
-              <div 
-                className="flex transition-transform duration-300 ease-in-out" 
-                id="reviewCarousel"
-                style={{
-                  transform: `translateX(0px)`,
-                }}
-              >
-                {filteredReviews.slice(0, 10).map((review, index) => (
-                  <div 
-                    key={review._id || index} 
-                    className="carousel-slide px-2 flex-shrink-0"
-                    style={{ width: '330px' }}
-                  >
-                    <div className="bg-white rounded-md p-4 shadow-sm border border-gray-100 flex flex-col h-full">
-                      <div className="flex items-start mb-2">
-                        <div className="mr-2 text-xl">
-                          <span className="inline-block w-6 h-6">
-                            {source === 'google' ? (
-                              <i className="fab fa-google text-blue-500"></i>
-                            ) : (
-                              <i className="fab fa-facebook text-blue-600"></i>
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center">
-                            {settings.showProfilePictures && (
-                              <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
-                                {review.profilePicture ? (
-                                  <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" width={40} height={40} />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                    <i className="fas fa-user text-gray-400"></i>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            <div>
-                              <h5 className="font-medium text-gray-800">{review.author}</h5>
-                              {settings.showDates && (
-                                <div className="text-gray-500  text-xs">{review.postedAt}</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {settings.showRatings && (
-                        <div className="mb-2">
-                          {review.rating ? (
-                            <Rating value={review.rating} size="sm" color="#FFC107" />
-                          ) : review.recommendationStatus === 'recommended' ? (
-                            <span className="text-green-500 text-xs font-medium">
-                              <i className="fas fa-thumbs-up mr-1"></i> Recommended
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 text-xs">No Rating</span>
-                          )}
-                        </div>
-                      )}
-                      <p className="text-gray-700 text-sm flex-grow mb-0 line-clamp-5">{review.content}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button 
-              onClick={() => {
-                const carousel = document.getElementById('reviewCarousel');
-                if (carousel) {
-                  const slide = carousel.querySelector('.carousel-slide');
-                  const totalWidth = carousel.scrollWidth;
-                  const visibleWidth = (carousel.parentElement ? carousel.parentElement.offsetWidth - 64 : 0);
-                  
-                  if (slide) {
-                    const width = (slide as HTMLElement).offsetWidth; 
-                    const currentTransform = carousel.style.transform || 'translateX(0px)';
-                    const currentOffset = parseInt(currentTransform.replace(/[^\d-]/g, '') || '0');
-                    const maxOffset = -(totalWidth - visibleWidth);
-                    const newOffset = Math.max(maxOffset, currentOffset - width);
-                    carousel.style.transform = `translateX(${newOffset}px)`;
-                  }
-                }
-              }}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-md border border-gray-200"
-              aria-label="Next review"
-            >
-              <i className="fa fa-chevron-right"></i>
-            </button>
-          </div>
-          <div className="flex justify-center items-center mt-4 space-x-1">
-            <button className="w-6 h-6 flex items-center justify-center text-sm text-gray-400 hover:text-gray-600">
-              <i className="fa fa-chevron-left"></i>
-            </button>
-          
-            <button className="w-2 h-2 rounded-full bg-blue-500"></button>
-            <button className="w-2 h-2 rounded-full bg-gray-300"></button>
-            <button className="w-2 h-2 rounded-full bg-gray-300"></button>z
-            <button className="w-2 h-2 rounded-full bg-gray-300"></button>
-            
-            <button className="w-6 h-6 flex items-center justify-center text-sm text-gray-400 hover:text-gray-600">
-              <i className="fa fa-chevron-right"></i>
-            </button>
-          </div>
-        </div>
+      {settings.layout === 'carousel' && filteredReviews.length > 0 && (
+        <Carousel
+          opts={{ align: "start", loop: filteredReviews.length > (filteredReviews.length < 3 ? 1 : 2) }} 
+          className="w-full max-w-full"
+        >
+          <CarouselContent className="-ml-2 py-1"> 
+            {filteredReviews.map((review, index) => (
+              <CarouselItem key={getReviewKey(review, index)} className="pl-2 basis-full md:basis-1/2"> 
+                <div className="p-1 h-full">
+                  <SingleReviewCard review={review} displaySettings={displaySettingsForCard} sourcePlatform={source} />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {filteredReviews.length > 1 && (
+            <>
+              <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 z-10 
+                                          h-8 w-8 rounded-full 
+                                          bg-card/80 backdrop-blur-sm text-card-foreground 
+                                          shadow-md border-border 
+                                          hover:bg-accent disabled:opacity-30 
+                                          sm:left-1" 
+              />
+              <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 z-10 
+                                        h-8 w-8 rounded-full 
+                                        bg-card/80 backdrop-blur-sm text-card-foreground 
+                                        shadow-md border-border 
+                                        hover:bg-accent disabled:opacity-30 
+                                        sm:right-1"
+              />
+            </>
+          )}
+        </Carousel>
       )}
 
-      {settings.layout === 'list' && (
-        <div className="space-y-4 mb-4">
-          {filteredReviews.slice(0, 6).map((review, index) => (
-            <div key={review._id || index} className="bg-accent/50 shadow-sm rounded-lg p-4 border border-border/50 transition-theme">
-              <div className="flex items-center mb-3">
-                {settings.showProfilePictures && (
-                  <div className="w-10 h-10 rounded-full border border-border/50 overflow-hidden bg-muted flex items-center justify-center text-muted-foreground transition-theme">
-                    {review.profilePicture ? (
-                      <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" width={40} height={40} />
-                    ) : (
-                      <i className="fas fa-user"></i>
-                    )}
-                  </div>
-                )}
-                <div className="ml-3">
-                  <h5 className="font-semibold text-card-foreground text-sm transition-theme">{review.author}</h5>
-                  {settings.showDates && (
-                    <span className="text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
-                  )}
-                </div>
-                {settings.showRatings && (
-                  <div className="ml-auto flex">
-                    {review.rating ? (
-                      <Rating value={review.rating} size="sm" />
-                    ) : review.recommendationStatus === 'recommended' ? (
-                      <span className="text-success text-xs font-medium transition-theme">
-                        <i className="fas fa-thumbs-up mr-1"></i> Recommended
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs transition-theme">No Rating</span>
-                    )}
-                  </div>
-                )}
-              </div>
-              <p className="text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
+      {settings.layout === 'list' && filteredReviews.length > 0 && (
+        <div className="space-y-3">
+          {filteredReviews.map((review, index) => (
+            <SingleReviewCard key={getReviewKey(review, index)} review={review} displaySettings={displaySettingsForCard} sourcePlatform={source} />
+          ))}
+        </div>
+      )}
+      
+     {settings.layout === 'masonry' && filteredReviews.length > 0 && (
+        <div className="columns-1 sm:columns-2 gap-3 space-y-3"> 
+          {filteredReviews.map((review, index) => (
+            <div key={getReviewKey(review, index)} className="break-inside-avoid-column">
+              <SingleReviewCard review={review} displaySettings={displaySettingsForCard} sourcePlatform={source} />
             </div>
           ))}
         </div>
       )}
       
-      {settings.layout === 'masonry' && (
-        <div className="mb-4">
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-            {filteredReviews.slice(0, 9).map((review, index) => {
-              return (
-                <div 
-                  key={review._id || index} 
-                  className="bg-accent/50 shadow-sm rounded-lg p-4 border border-border/50 transition-theme break-inside-avoid mb-4 relative"
-                >
-                  <div className="flex items-center mb-3">
-                    {settings.showProfilePictures && (
-                      <div className="w-10 h-10 rounded-full border border-border/50 overflow-hidden bg-muted flex items-center justify-center text-muted-foreground transition-theme">
-                        {review.profilePicture ? (
-                          <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" width={40} height={40} />
-                        ) : (
-                          <i className="fas fa-user"></i>
-                        )}
-                      </div>
-                    )}
-                    <div className="ml-3">
-                      <h5 className="font-semibold text-card-foreground text-sm transition-theme">{review.author}</h5>
-                      {settings.showDates && (
-                        <span className="text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
-                      )}
-                    </div>
+        {settings.layout === 'badge' && (
+        <div className="flex justify-center items-center py-4">
+            <div className="w-full max-w-[280px] sm:max-w-xs mx-auto flex flex-col shadow-lg rounded-lg overflow-hidden border-2 border-[var(--widget-theme-color)]">
+              <div className="bg-[var(--widget-theme-color)] text-white px-3 py-2 flex items-center justify-between">
+                <div className="flex items-center">
+                  <i className={`${sourceIcon} text-lg mr-1.5`}></i>
+                  <span className="font-semibold text-xs sm:text-sm">{businessName}</span>
+                </div>
+                {widget.businessUrl?.url && <a href={widget.businessUrl.url} target="_blank" rel="noopener noreferrer" className="text-white/80 hover:text-white text-xs hover:underline"><i className="fas fa-external-link-alt text-xs"></i></a>}
+              </div>
+              <div className="bg-card p-3 text-center">
+                <div className="flex justify-center items-center mb-1.5">
+                  <div className="rounded-full bg-[var(--widget-theme-color)] text-white text-lg w-8 h-8 flex items-center justify-center mr-2 font-bold">
+                    {formatRating(avgRating)}
                   </div>
-                  {settings.showRatings && (
-                    <div className="flex mb-2">
-                      {review.rating ? (
-                        <Rating value={review.rating} size="sm" />
-                      ) : review.recommendationStatus === 'recommended' ? (
-                        <span className="text-success text-xs font-medium transition-theme">
-                          <i className="fas fa-thumbs-up mr-1"></i> Recommended
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs transition-theme">No Rating</span>
-                      )}
-                    </div>
-                  )}
-                  <p className="text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
+                  <Rating value={avgRating} size="md" readOnly color={settings.themeColor} />
                 </div>
-              );
-            })}
-          </div>
+                <div className="text-xs font-medium text-muted-foreground">
+                  Based on {filteredReviews.length} review{filteredReviews.length !== 1 && 's'}
+                </div>
+              </div>
+            </div>
         </div>
       )}
-      
-      {settings.layout === 'badge' && (
-        <div className="mb-4">
-          <div className="w-full max-w-xs mx-auto flex flex-col shadow-lg rounded-lg overflow-hidden border-2 border-[var(--widget-theme-color)]">
-            <div className="bg-[var(--widget-theme-color)] text-white px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center">
-                <i className={`fab fa-${source === 'google' ? 'google' : 'facebook-f'} text-xl mr-2`}></i>
-                <span className="font-bold text-sm">{source === 'google' ? 'Google' : 'Facebook'} Rating</span>
-              </div>
-              <a 
-                href={widget.businessUrl?.url || "#"} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-white/90 hover:text-white hover:underline text-xs font-medium transition-all"
-              >
-                <i className="fas fa-external-link-alt mr-1"></i> View
-              </a>
-            </div>
-            <div className="bg-white p-4 text-center">
-              <h4 className="font-bold text-card-foreground text-sm mb-2 transition-theme">{businessName}</h4>
-              <div className="flex justify-center items-center mb-2">
-                <div className="rounded-full bg-[var(--widget-theme-color)] text-white text-xl w-10 h-10 flex items-center justify-center mr-2 font-bold">
-                  {formatRating(avgRating)}
-                </div>
-                <Rating value={avgRating} size="lg" color={settings.themeColor} />
-              </div>
-              
-              <div className="text-sm font-semibold text-card-foreground transition-theme">
-                Based on {filteredReviews.length} {filteredReviews.length === 1 ? 'review' : 'reviews'}
-              </div>
-            </div>
-            <div className="bg-[var(--widget-theme-color)]/10 p-2 text-center border-t border-[var(--widget-theme-color)]/30">
-              <div className="text-xs text-card-foreground transition-theme">
-                <span className="font-bold">Verified</span> by <span className="text-[var(--widget-theme-color)] font-semibold">ReviewHub</span>
-              </div>
-            </div>
-          </div>
-          <div className="w-full max-w-xs mx-auto mt-4 bg-white shadow-md rounded-md overflow-hidden border border-[var(--widget-theme-color)]/30 flex items-center transition-all hover:shadow-lg cursor-pointer">
-            <div className="bg-[var(--widget-theme-color)] text-white p-3 flex-shrink-0">
-              <div className="font-bold text-xl">{formatRating(avgRating)}</div>
-              <div className="text-xs font-medium">out of 5</div>
-            </div>
-            <div className="p-3 flex-1">
-              <div className="flex items-center mb-1">
-                <Rating value={avgRating} size="sm" />
-                <span className="ml-2 text-xs text-card-muted-foreground transition-theme">
-                  ({filteredReviews.length})
-                </span>
-              </div>
-              <div className="text-xs text-card-foreground truncate transition-theme font-medium">
-                {businessName}
-              </div>
-            </div>
-            <div className="pr-3 flex items-center justify-center">
-              <i className={`fab fa-${source === 'google' ? 'google' : 'facebook-f'} text-lg text-[var(--widget-theme-color)]`}></i>
-            </div>
-          </div>
-          <div className="w-full max-w-xs mx-auto mt-4 flex items-center justify-center bg-white shadow-sm rounded-full border border-[var(--widget-theme-color)]/30 py-1.5 px-3">
-            <i className={`fab fa-${source === 'google' ? 'google' : 'facebook-f'} text-[var(--widget-theme-color)] mr-2`}></i>
-            <Rating value={avgRating} size="sm" />
-            <span className="mx-1 text-xs text-card-muted-foreground transition-theme">
-              {formatRating(avgRating)}/5
-            </span>
-            <span className="text-xs text-card-foreground transition-theme font-medium">
-              ReviewHub
-            </span>
-          </div>
+      {settings.layout !== 'badge' && filteredReviews.length > 0 && (
+        <div className="mt-4 text-center text-xs text-muted-foreground">
+          Powered by <span className="font-semibold text-[var(--widget-theme-color)]">ReviewHub</span>
         </div>
       )}
-      
-      <div className="flex items-center justify-between">
-        <div className="flex space-x-1">
-          <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-theme">
-            <i className="fas fa-chevron-left text-xs"></i>
-          </button>
-          <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-theme">
-            <i className="fas fa-chevron-right text-xs"></i>
-          </button>
-        </div>
-        <a 
-          href={widget.businessUrl?.url || "#"} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-sm text-[var(--widget-theme-color)] hover:underline transition-theme font-medium"
-        >
-          See all reviews on {source === 'google' ? 'Google' : 'Facebook'}
-          <i className="fas fa-external-link-alt ml-1 text-xs"></i>
-        </a>
-      </div>
     </div>
   );
 };
-}
+
 export default WidgetPreview;
