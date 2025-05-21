@@ -53,14 +53,14 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
       return 'store-alt';
     };
     const getSourceBgClass = (): string => {
-      if (widget.businessUrl?.source === 'google') return 'bg-red-100 dark:bg-red-900';
-      if (widget.businessUrl?.source === 'facebook') return 'bg-blue-100 dark:bg-blue-900';
-      return 'bg-gray-100 dark:bg-gray-700';
+      if (widget.businessUrl?.source === 'google') return 'bg-red-100';
+      if (widget.businessUrl?.source === 'facebook') return 'bg-blue-100';
+      return 'bg-gray-100';
     };
     const getSourceTextClass = (): string => {
-      if (widget.businessUrl?.source === 'google') return 'text-red-600 dark:text-red-400';
-      if (widget.businessUrl?.source === 'facebook') return 'text-blue-600 dark:text-blue-400';
-      return 'text-gray-600 dark:text-gray-400';
+      if (widget.businessUrl?.source === 'google') return 'text-red-600';
+      if (widget.businessUrl?.source === 'facebook') return 'text-blue-600';
+      return 'text-gray-600';
     };
 
     const widgetPropsForPreviewModal: IWidgetForPreviewModal = {
@@ -93,13 +93,13 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
 
   return (
     <>
-      <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden widget-card transition-all duration-300 hover:shadow-xl ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden widget-card transition-all duration-300 hover:shadow-xl ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center min-w-0">
             <div className={`w-9 h-9 rounded-lg ${getSourceBgClass()} flex items-center justify-center ${getSourceTextClass()} flex-shrink-0`}>
               <i className={`fab fa-${getSourceIcon()}`}></i>
             </div>
-            <h3 className="ml-3 font-semibold text-gray-800 dark:text-white truncate" title={widget.name}>
+            <h3 className="ml-3 font-semibold text-gray-800  truncate" title={widget.name}>
               {widget.name}
             </h3>
           </div>
@@ -127,7 +127,7 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={onDelete}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/50 dark:text-red-400 dark:focus:text-red-400"
+                    className="text-red-600 focus:text-red-600 focus:bg-red-500  "
                     disabled={isDeleting}
                   >
                     <i className="fas fa-trash-alt mr-2 h-4 w-4" /> Delete
@@ -151,7 +151,7 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
                 }
               })}
             </div>
-            <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300 truncate" title={widget.businessUrl?.name || 'Unknown Business'}>
+            <span className="ml-2 text-sm font-medium text-gray-700 truncate" title={widget.businessUrl?.name || 'Unknown Business'}>
               {widget.businessUrl?.name || 'Unknown Business'}
             </span>
           </div>
@@ -159,10 +159,10 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
           <div className="flex items-center justify-between text-sm">
             <div>
               <span>Created: </span>
-              <span className="font-medium text-gray-700 dark:text-gray-300">{createdDate}</span>
+              <span className="font-medium text-gray-700 ">{createdDate}</span>
             </div>
             <div>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${widget.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${widget.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                 {widget.isActive ? 'Active' : 'Inactive'}
               </span>
             </div>

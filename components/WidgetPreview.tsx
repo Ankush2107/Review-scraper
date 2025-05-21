@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Rating } from "../components/ui/Rating";
 import { formatRating } from "../lib/utils";
+import { useState } from "react";
 
 export interface IReviewItemFromAPI {
   _id?: string;
@@ -71,28 +72,33 @@ const WidgetPreview = ({
 
   const source = widget.businessUrl?.source || "google";
   const businessName = widget.businessUrl?.name || "Business Name";
+
+  const ReviewCardItem = ({ review, settings }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  constcontent = review.content || "";
+  const canReadMore = content.length > 150;
   return (
     <div 
-      className="border border-border dark:border-border rounded-lg p-6 mb-5 bg-card dark:bg-card transition-theme"
+      className="border border-border rounded-lg p-6 mb-5 bg-card transition-theme"
       style={colorStyle}
     >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <div className="w-12 h-12 rounded-full bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground transition-theme">
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground transition-theme">
             <i className={`fab fa-${source === 'google' ? 'google' : 'facebook-f'} text-lg`}></i>
           </div>
           <div className="ml-3">
-            <h4 className="font-semibold text-card-foreground dark:text-card-foreground transition-theme">{businessName}</h4>
+            <h4 className="font-semibold text-card-foreground  transition-theme">{businessName}</h4>
             <div className="flex items-center">
               <Rating value={avgRating} size="lg" />
-              <span className="ml-2 text-sm text-card-muted-foreground dark:text-card-muted-foreground transition-theme">
+              <span className="ml-2 text-sm text-card-muted-foreground transition-theme">
                 {formatRating(avgRating)} out of 5
               </span>
             </div>
           </div>
         </div>
         <div className="flex items-center">
-          <span className="text-card-muted-foreground dark:text-card-muted-foreground mr-2 text-sm transition-theme">
+          <span className="text-card-muted-foreground text-sm transition-theme">
             Based on {filteredReviews.length} reviews
           </span>
           <div className="w-6 h-6 flex items-center justify-center">
@@ -103,21 +109,21 @@ const WidgetPreview = ({
       {settings.layout === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           {filteredReviews.slice(0, 6).map((review, index) => (
-            <div key={review._id || index} className="bg-accent/50 dark:bg-accent/50 shadow-sm rounded-lg p-4 transition-theme border border-border/50 dark:border-border/50">
+            <div key={review._id || index} className="bg-accent/50 shadow-sm rounded-lg p-4 transition-theme border border-border/50">
               <div className="flex items-center mb-3">
                 {settings.showProfilePictures && (
-                  <div className="w-10 h-10 rounded-full border border-border/50 dark:border-border/50 overflow-hidden bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground transition-theme">
+                  <div className="w-10 h-10 rounded-full border border-border/50 overflow-hidden bg-muted flex items-center justify-center text-muted-foreground transition-theme">
                     {review.profilePicture ? (
-                      <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
+                      <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" width={40} height={40} />
                     ) : (
                       <i className="fas fa-user"></i>
                     )}
                   </div>
                 )}
                 <div className="ml-3">
-                  <h5 className="font-semibold text-card-foreground dark:text-card-foreground text-sm transition-theme">{review.author}</h5>
+                  <h5 className="font-semibold text-card-foreground  text-sm transition-theme">{review.author}</h5>
                   {settings.showDates && (
-                    <span className="text-card-muted-foreground dark:text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
+                    <span className="text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
                   )}
                 </div>
               </div>
@@ -126,15 +132,15 @@ const WidgetPreview = ({
                   {review.rating ? (
                     <Rating value={review.rating} size="sm" />
                   ) : review.recommendationStatus === 'recommended' ? (
-                    <span className="text-success dark:text-success text-xs font-medium transition-theme">
+                    <span className="text-success text-xs font-medium transition-theme">
                       <i className="fas fa-thumbs-up mr-1"></i> Recommended
                     </span>
                   ) : (
-                    <span className="text-muted-foreground dark:text-muted-foreground text-xs transition-theme">No Rating</span>
+                    <span className="text-muted-foreground text-xs transition-theme">No Rating</span>
                   )}
                 </div>
               )}
-              <p className="text-card-foreground dark:text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
+              <p className="text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
             </div>
           ))}
         </div>
@@ -156,7 +162,7 @@ const WidgetPreview = ({
                   }
                 }
               }}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 shadow-md border border-gray-200 dark:border-gray-700"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-md border border-gray-200"
               aria-label="Previous review"
             >
               <i className="fa fa-chevron-left"></i>
@@ -175,7 +181,7 @@ const WidgetPreview = ({
                     className="carousel-slide px-2 flex-shrink-0"
                     style={{ width: '330px' }}
                   >
-                    <div className="bg-white dark:bg-gray-800 rounded-md p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-full">
+                    <div className="bg-white rounded-md p-4 shadow-sm border border-gray-100 flex flex-col h-full">
                       <div className="flex items-start mb-2">
                         <div className="mr-2 text-xl">
                           <span className="inline-block w-6 h-6">
@@ -191,18 +197,18 @@ const WidgetPreview = ({
                             {settings.showProfilePictures && (
                               <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
                                 {review.profilePicture ? (
-                                  <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
+                                  <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" width={40} height={40} />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                                    <i className="fas fa-user text-gray-400 dark:text-gray-500"></i>
+                                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                    <i className="fas fa-user text-gray-400"></i>
                                   </div>
                                 )}
                               </div>
                             )}
                             <div>
-                              <h5 className="font-medium text-gray-800 dark:text-gray-100">{review.author}</h5>
+                              <h5 className="font-medium text-gray-800">{review.author}</h5>
                               {settings.showDates && (
-                                <div className="text-gray-500 dark:text-gray-400 text-xs">{review.postedAt}</div>
+                                <div className="text-gray-500  text-xs">{review.postedAt}</div>
                               )}
                             </div>
                           </div>
@@ -213,15 +219,15 @@ const WidgetPreview = ({
                           {review.rating ? (
                             <Rating value={review.rating} size="sm" color="#FFC107" />
                           ) : review.recommendationStatus === 'recommended' ? (
-                            <span className="text-green-500 dark:text-green-400 text-xs font-medium">
+                            <span className="text-green-500 text-xs font-medium">
                               <i className="fas fa-thumbs-up mr-1"></i> Recommended
                             </span>
                           ) : (
-                            <span className="text-gray-400 dark:text-gray-500 text-xs">No Rating</span>
+                            <span className="text-gray-400 text-xs">No Rating</span>
                           )}
                         </div>
                       )}
-                      <p className="text-gray-700 dark:text-gray-300 text-sm flex-grow mb-0 line-clamp-5">{review.content}</p>
+                      <p className="text-gray-700 text-sm flex-grow mb-0 line-clamp-5">{review.content}</p>
                     </div>
                   </div>
                 ))}
@@ -233,7 +239,7 @@ const WidgetPreview = ({
                 if (carousel) {
                   const slide = carousel.querySelector('.carousel-slide');
                   const totalWidth = carousel.scrollWidth;
-                  const visibleWidth = (carousel.parentElement ? carousel.parentElement.offsetWidth - 64 : 0); // account for padding
+                  const visibleWidth = (carousel.parentElement ? carousel.parentElement.offsetWidth - 64 : 0);
                   
                   if (slide) {
                     const width = (slide as HTMLElement).offsetWidth; 
@@ -245,7 +251,7 @@ const WidgetPreview = ({
                   }
                 }
               }}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 shadow-md border border-gray-200 dark:border-gray-700"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-md border border-gray-200"
               aria-label="Next review"
             >
               <i className="fa fa-chevron-right"></i>
@@ -258,7 +264,7 @@ const WidgetPreview = ({
           
             <button className="w-2 h-2 rounded-full bg-blue-500"></button>
             <button className="w-2 h-2 rounded-full bg-gray-300"></button>
-            <button className="w-2 h-2 rounded-full bg-gray-300"></button>
+            <button className="w-2 h-2 rounded-full bg-gray-300"></button>z
             <button className="w-2 h-2 rounded-full bg-gray-300"></button>
             
             <button className="w-6 h-6 flex items-center justify-center text-sm text-gray-400 hover:text-gray-600">
@@ -271,21 +277,21 @@ const WidgetPreview = ({
       {settings.layout === 'list' && (
         <div className="space-y-4 mb-4">
           {filteredReviews.slice(0, 6).map((review, index) => (
-            <div key={review._id || index} className="bg-accent/50 dark:bg-accent/50 shadow-sm rounded-lg p-4 border border-border/50 dark:border-border/50 transition-theme">
+            <div key={review._id || index} className="bg-accent/50 shadow-sm rounded-lg p-4 border border-border/50 transition-theme">
               <div className="flex items-center mb-3">
                 {settings.showProfilePictures && (
-                  <div className="w-10 h-10 rounded-full border border-border/50 dark:border-border/50 overflow-hidden bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground transition-theme">
+                  <div className="w-10 h-10 rounded-full border border-border/50 overflow-hidden bg-muted flex items-center justify-center text-muted-foreground transition-theme">
                     {review.profilePicture ? (
-                      <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
+                      <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" width={40} height={40} />
                     ) : (
                       <i className="fas fa-user"></i>
                     )}
                   </div>
                 )}
                 <div className="ml-3">
-                  <h5 className="font-semibold text-card-foreground dark:text-card-foreground text-sm transition-theme">{review.author}</h5>
+                  <h5 className="font-semibold text-card-foreground text-sm transition-theme">{review.author}</h5>
                   {settings.showDates && (
-                    <span className="text-card-muted-foreground dark:text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
+                    <span className="text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
                   )}
                 </div>
                 {settings.showRatings && (
@@ -293,16 +299,16 @@ const WidgetPreview = ({
                     {review.rating ? (
                       <Rating value={review.rating} size="sm" />
                     ) : review.recommendationStatus === 'recommended' ? (
-                      <span className="text-success dark:text-success text-xs font-medium transition-theme">
+                      <span className="text-success text-xs font-medium transition-theme">
                         <i className="fas fa-thumbs-up mr-1"></i> Recommended
                       </span>
                     ) : (
-                      <span className="text-muted-foreground dark:text-muted-foreground text-xs transition-theme">No Rating</span>
+                      <span className="text-muted-foreground text-xs transition-theme">No Rating</span>
                     )}
                   </div>
                 )}
               </div>
-              <p className="text-card-foreground dark:text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
+              <p className="text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
             </div>
           ))}
         </div>
@@ -315,22 +321,22 @@ const WidgetPreview = ({
               return (
                 <div 
                   key={review._id || index} 
-                  className="bg-accent/50 dark:bg-accent/50 shadow-sm rounded-lg p-4 border border-border/50 dark:border-border/50 transition-theme break-inside-avoid mb-4 relative"
+                  className="bg-accent/50 shadow-sm rounded-lg p-4 border border-border/50 transition-theme break-inside-avoid mb-4 relative"
                 >
                   <div className="flex items-center mb-3">
                     {settings.showProfilePictures && (
-                      <div className="w-10 h-10 rounded-full border border-border/50 dark:border-border/50 overflow-hidden bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground transition-theme">
+                      <div className="w-10 h-10 rounded-full border border-border/50 overflow-hidden bg-muted flex items-center justify-center text-muted-foreground transition-theme">
                         {review.profilePicture ? (
-                          <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" />
+                          <Image src={review.profilePicture} alt={review.author} className="w-full h-full object-cover" width={40} height={40} />
                         ) : (
                           <i className="fas fa-user"></i>
                         )}
                       </div>
                     )}
                     <div className="ml-3">
-                      <h5 className="font-semibold text-card-foreground dark:text-card-foreground text-sm transition-theme">{review.author}</h5>
+                      <h5 className="font-semibold text-card-foreground text-sm transition-theme">{review.author}</h5>
                       {settings.showDates && (
-                        <span className="text-card-muted-foreground dark:text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
+                        <span className="text-card-muted-foreground text-xs transition-theme">{review.postedAt}</span>
                       )}
                     </div>
                   </div>
@@ -339,15 +345,15 @@ const WidgetPreview = ({
                       {review.rating ? (
                         <Rating value={review.rating} size="sm" />
                       ) : review.recommendationStatus === 'recommended' ? (
-                        <span className="text-success dark:text-success text-xs font-medium transition-theme">
+                        <span className="text-success text-xs font-medium transition-theme">
                           <i className="fas fa-thumbs-up mr-1"></i> Recommended
                         </span>
                       ) : (
-                        <span className="text-muted-foreground dark:text-muted-foreground text-xs transition-theme">No Rating</span>
+                        <span className="text-muted-foreground text-xs transition-theme">No Rating</span>
                       )}
                     </div>
                   )}
-                  <p className="text-card-foreground dark:text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
+                  <p className="text-card-foreground text-sm leading-relaxed transition-theme">{review.content}</p>
                 </div>
               );
             })}
@@ -372,8 +378,8 @@ const WidgetPreview = ({
                 <i className="fas fa-external-link-alt mr-1"></i> View
               </a>
             </div>
-            <div className="bg-white dark:bg-gray-900 p-4 text-center">
-              <h4 className="font-bold text-card-foreground dark:text-card-foreground text-sm mb-2 transition-theme">{businessName}</h4>
+            <div className="bg-white p-4 text-center">
+              <h4 className="font-bold text-card-foreground text-sm mb-2 transition-theme">{businessName}</h4>
               <div className="flex justify-center items-center mb-2">
                 <div className="rounded-full bg-[var(--widget-theme-color)] text-white text-xl w-10 h-10 flex items-center justify-center mr-2 font-bold">
                   {formatRating(avgRating)}
@@ -381,17 +387,17 @@ const WidgetPreview = ({
                 <Rating value={avgRating} size="lg" color={settings.themeColor} />
               </div>
               
-              <div className="text-sm font-semibold text-card-foreground dark:text-card-foreground transition-theme">
+              <div className="text-sm font-semibold text-card-foreground transition-theme">
                 Based on {filteredReviews.length} {filteredReviews.length === 1 ? 'review' : 'reviews'}
               </div>
             </div>
-            <div className="bg-[var(--widget-theme-color)]/10 dark:bg-[var(--widget-theme-color)]/20 p-2 text-center border-t border-[var(--widget-theme-color)]/30">
-              <div className="text-xs text-card-foreground dark:text-card-foreground transition-theme">
+            <div className="bg-[var(--widget-theme-color)]/10 p-2 text-center border-t border-[var(--widget-theme-color)]/30">
+              <div className="text-xs text-card-foreground transition-theme">
                 <span className="font-bold">Verified</span> by <span className="text-[var(--widget-theme-color)] font-semibold">ReviewHub</span>
               </div>
             </div>
           </div>
-          <div className="w-full max-w-xs mx-auto mt-4 bg-white dark:bg-gray-900 shadow-md rounded-md overflow-hidden border border-[var(--widget-theme-color)]/30 flex items-center transition-all hover:shadow-lg cursor-pointer">
+          <div className="w-full max-w-xs mx-auto mt-4 bg-white shadow-md rounded-md overflow-hidden border border-[var(--widget-theme-color)]/30 flex items-center transition-all hover:shadow-lg cursor-pointer">
             <div className="bg-[var(--widget-theme-color)] text-white p-3 flex-shrink-0">
               <div className="font-bold text-xl">{formatRating(avgRating)}</div>
               <div className="text-xs font-medium">out of 5</div>
@@ -399,11 +405,11 @@ const WidgetPreview = ({
             <div className="p-3 flex-1">
               <div className="flex items-center mb-1">
                 <Rating value={avgRating} size="sm" />
-                <span className="ml-2 text-xs text-card-muted-foreground dark:text-card-muted-foreground transition-theme">
+                <span className="ml-2 text-xs text-card-muted-foreground transition-theme">
                   ({filteredReviews.length})
                 </span>
               </div>
-              <div className="text-xs text-card-foreground dark:text-card-foreground truncate transition-theme font-medium">
+              <div className="text-xs text-card-foreground truncate transition-theme font-medium">
                 {businessName}
               </div>
             </div>
@@ -411,14 +417,14 @@ const WidgetPreview = ({
               <i className={`fab fa-${source === 'google' ? 'google' : 'facebook-f'} text-lg text-[var(--widget-theme-color)]`}></i>
             </div>
           </div>
-          <div className="w-full max-w-xs mx-auto mt-4 flex items-center justify-center bg-white dark:bg-gray-900 shadow-sm rounded-full border border-[var(--widget-theme-color)]/30 py-1.5 px-3">
+          <div className="w-full max-w-xs mx-auto mt-4 flex items-center justify-center bg-white shadow-sm rounded-full border border-[var(--widget-theme-color)]/30 py-1.5 px-3">
             <i className={`fab fa-${source === 'google' ? 'google' : 'facebook-f'} text-[var(--widget-theme-color)] mr-2`}></i>
             <Rating value={avgRating} size="sm" />
-            <span className="mx-1 text-xs text-card-muted-foreground dark:text-card-muted-foreground transition-theme">
+            <span className="mx-1 text-xs text-card-muted-foreground transition-theme">
               {formatRating(avgRating)}/5
             </span>
-            <span className="text-xs text-card-foreground dark:text-card-foreground transition-theme font-medium">
-              • ReviewHub
+            <span className="text-xs text-card-foreground transition-theme font-medium">
+              ReviewHub
             </span>
           </div>
         </div>
@@ -426,10 +432,10 @@ const WidgetPreview = ({
       
       <div className="flex items-center justify-between">
         <div className="flex space-x-1">
-          <button className="w-8 h-8 rounded-full bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground hover:bg-accent dark:hover:bg-accent hover:text-accent-foreground dark:hover:text-accent-foreground transition-theme">
+          <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-theme">
             <i className="fas fa-chevron-left text-xs"></i>
           </button>
-          <button className="w-8 h-8 rounded-full bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground dark:text-muted-foreground hover:bg-accent dark:hover:bg-accent hover:text-accent-foreground dark:hover:text-accent-foreground transition-theme">
+          <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-theme">
             <i className="fas fa-chevron-right text-xs"></i>
           </button>
         </div>
@@ -446,5 +452,5 @@ const WidgetPreview = ({
     </div>
   );
 };
-
+}
 export default WidgetPreview;

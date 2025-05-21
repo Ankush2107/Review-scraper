@@ -1,14 +1,13 @@
 import dbConnect from './mongodb';
 import UserModel, { IUser } from '../models/User.model';
-import BusinessUrlModel, { IBusinessUrl } from '../models/BusinessUrl.model';
-import ReviewBatchModel, { IReviewBatch, IReviewItem } from '../models/Review.model';
-import GoogleBusinessUrlModel, { IGoogleBusinessUrl } from '../models/GoogleBusinessUrl.model';
-import FacebookBusinessUrlModel, { IFacebookBusinessUrl } from '../models/FacebookBusinessUrl.model';
+import { IBusinessUrl } from '../models/BusinessUrl.model';
+import { GoogleReviewBatchModel, FacebookReviewBatchModel, type IReviewBatch, IReviewItem } from '../models/Review.model';
+import GoogleBusinessUrlModel from '../models/GoogleBusinessUrl.model';
+import FacebookBusinessUrlModel from '../models/FacebookBusinessUrl.model';
 import WidgetModel, { IWidget } from '../models/Widget.model';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { Types, UpdateQuery  } from 'mongoose';
-
 interface IBusinessStats {
   totalBusinessUrls: number;
   totalWidgets: number;
@@ -20,14 +19,12 @@ interface IBusinessStats {
     facebook: number;
   };
 }
-
 interface ReviewStatItem {
   _id: 'google' | 'facebook' | null;
   totalReviewsInSource: number;
   sumOfRatings: number;
   countOfRatedReviews: number;
 };
-
 export interface IBusinessUrlDisplay {
     _id: string;
     name: string;
@@ -35,17 +32,14 @@ export interface IBusinessUrlDisplay {
     source: 'google' | 'facebook';
     userId?: string;
 }
-
 async function ensureDbConnected() {
   await dbConnect();
 };
-
 export const getUserById = async (id: string): Promise<IUser | null> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(id)) return null;
   return UserModel.findById(id).exec();
 };
-
 export const getUserByEmail = async (email: string): Promise<IUser | null> => {
   await ensureDbConnected();
   const processedEmail = email.toLowerCase().trim();
@@ -65,12 +59,10 @@ export const getUserByEmail = async (email: string): Promise<IUser | null> => {
     throw typedError; 
   }
 };
-
 export const getUserByUsername = async (username: string): Promise<IUser | null> => {
   await ensureDbConnected();
   return UserModel.findOne({ username }).select('+password').lean().exec() as Promise<IUser | null>;
 };
-
 interface CreateUserArgs {
   email: string;
   password?: string; 
@@ -94,65 +86,97 @@ export const createUser = async (userData: CreateUserArgs): Promise<IUser> => {
   delete userObject.password;
   return userObject as IUser;
 };
-
 export const comparePassword = async (password: string, hashedPassword?: string): Promise<boolean> => {
   if (!hashedPassword) return false;
   return bcrypt.compare(password, hashedPassword);
 };
-
 export const getBusinessUrlById = async (id: string): Promise<IBusinessUrl | null> => {
   await ensureDbConnected();
-  if (!Types.ObjectId.isValid(id)) return null;
-  return BusinessUrlModel.findById(id).exec();
+  if (!Types.ObjectId.isValid(id)) {
+    console.warn(`[Storage/getBusinessUrlById] Invalid ID format: ${id}`);
+    return null;
+  }
+  console.log(`[Storage/getBusinessUrlById] Searching for ID: ${id}`);
+  let businessUrl = await GoogleBusinessUrlModel.findById(id).lean().exec();
+  if (businessUrl) {
+    console.log(`[Storage/getBusinessUrlById] Found in GoogleBusinessUrlModel:`, businessUrl.name);
+    return { ...businessUrl, source: businessUrl.source || 'google' } as IBusinessUrl;
+  }
+  console.log(`[Storage/getBusinessUrlById] Not in Google, trying FacebookBusinessUrlModel for ID: ${id}`);
+  businessUrl = await FacebookBusinessUrlModel.findById(id).lean().exec();
+  if (businessUrl) {
+    console.log(`[Storage/getBusinessUrlById] Found in FacebookBusinessUrlModel:`, businessUrl.name);
+    return { ...businessUrl, source: businessUrl.source || 'facebook' } as IBusinessUrl;
+  }
+  console.log(`[Storage/getBusinessUrlById] ID ${id} not found in any business URL collection.`);
+  return null;
 };
-
 export const getBusinessUrlByUrlHash = async (urlHash: string): Promise<IBusinessUrl | null> => {
   await ensureDbConnected();
   return BusinessUrlModel.findOne({ urlHash }).exec();
 };
-
 export const getBusinessUrlsByUserId = async (userId: string): Promise<IBusinessUrlDisplay[]> => {
   await ensureDbConnected();
-  if (!Types.ObjectId.isValid(userId)) return [];
-
+  if (!Types.ObjectId.isValid(userId)) {
+    console.warn("[Storage/getBusinessUrlsByUserId] Invalid userId provided:", userId);
+    return [];
+  }
   const userIdObj = new Types.ObjectId(userId);
+  console.log(`[Storage/getBusinessUrlsByUserId] Fetching URLs for userId (ObjectId): ${userIdObj}`);
 
-  const googleUrls = await GoogleBusinessUrlModel.find({ userId: userIdObj })
-    .select('_id name url source userId') 
-    .sort({ addedAt: -1 })
-    .lean()
-    .exec();
+  try {
+    const googleUrlsRaw = await GoogleBusinessUrlModel.find({ userId: userIdObj })
+      .sort({ addedAt: -1 })
+      .lean()
+      .exec();
+    console.log(`[Storage/getBusinessUrlsByUserId] Found ${googleUrlsRaw.length} Google URLs.`);
 
-  const facebookUrls = await FacebookBusinessUrlModel.find({ userId: userIdObj })
-    .select('_id name url source userId')
-    .sort({ addedAt: -1 })
-    .lean()
-    .exec();
+    const facebookUrlsRaw = await FacebookBusinessUrlModel.find({ userId: userIdObj })
+      .sort({ addedAt: -1 })
+      .lean()
+      .exec();
+    console.log(`[Storage/getBusinessUrlsByUserId] Found ${facebookUrlsRaw.length} Facebook URLs.`);
+    const combinedUrls: IBusinessUrlDisplay[] = [
+      ...googleUrlsRaw.map(doc => ({
+        _id: doc._id.toString(),
+        name: doc.name,
+        url: doc.url,
+        source: 'google',
+        userId: doc.userId?.toString(),
+      })),
+      ...facebookUrlsRaw.map(doc => ({
+        _id: doc._id.toString(),
+        name: doc.name,
+        url: doc.url,
+        source: 'facebook', 
+        userId: doc.userId?.toString(),
+      }))
+    ];
+    console.log(`[Storage/getBusinessUrlsByUserId] Combined ${combinedUrls.length} URLs for userId: ${userId}`);
+    combinedUrls.sort(() => {
+        return 0;
+    });
 
-  const combined = [
-    ...googleUrls.map(doc => ({ ...doc, _id: doc._id.toString(), userId: doc.userId?.toString(), source: 'google' as const })),
-    ...facebookUrls.map(doc => ({ ...doc, _id: doc._id.toString(), userId: doc.userId?.toString(), source: 'facebook' as const }))
-  ];
-  console.log(`[Storage/getBusinessUrlsByUserId] Found ${combined.length} URLs for userId: ${userId}`);
-  return combined;
+    return combinedUrls;
+
+  } catch (error) {
+    const err = error as Error;
+    console.error(`[Storage/getBusinessUrlsByUserId] Error fetching business URLs for userId ${userId}:`, err.message, err.stack);
+    throw new Error(`Database error while fetching business URLs: ${err.message}`);
+  }
 };
-
 interface CreateBusinessUrlArgs {
   userId: string;
   name: string;
   url: string;
   source: 'google' | 'facebook';
 }
-
 export const getAllBusinessUrlsForDisplay = async (): Promise<IBusinessUrl[]> => {
   await ensureDbConnected();
   const googleUrls = await GoogleBusinessUrlModel.find({}).select('name url source urlHash _id').lean().exec();
   const facebookUrls = await FacebookBusinessUrlModel.find({}).select('name url source urlHash _id').lean().exec();
-
-  // Add source property if it's missing from old data
   const processedGoogleUrls = googleUrls.map(doc => ({ ...doc, source: doc.source || 'google' })) as IBusinessUrl[];
   const processedFacebookUrls = facebookUrls.map(doc => ({ ...doc, source: doc.source || 'facebook' })) as IBusinessUrl[];
-
   return [...processedGoogleUrls, ...processedFacebookUrls].sort((a, b) => b.addedAt && a.addedAt ? b.addedAt.getTime() - a.addedAt.getTime() : 0);
 };
 export const createBusinessUrl = async (data: CreateBusinessUrlArgs): Promise<IBusinessUrlDisplay> => {
@@ -187,54 +211,76 @@ export const createBusinessUrl = async (data: CreateBusinessUrlArgs): Promise<IB
     userId: result.userId?.toString(),
   };
 };
-
-export const updateBusinessUrlScrapedTime = async (id: string): Promise<IBusinessUrl | null> => {
+export const updateBusinessUrlScrapedTime = async (
+  id: string,
+  source: 'google' | 'facebook' 
+): Promise<IBusinessUrl | null> => {
   await ensureDbConnected();
-  if (!Types.ObjectId.isValid(id)) return null;
-  return BusinessUrlModel.findByIdAndUpdate(
-    id,
-    { $set: { lastScrapedAt: new Date() } },
-    { new: true }
-  ).exec();
-};
+  if (!Types.ObjectId.isValid(id)) {
+    console.warn(`[Storage/updateScrapedTime] Invalid ID: ${id}`);
+    return null;
+  }
+  if (!source) {
+    console.warn(`[Storage/updateScrapedTime] Missing source for ID: ${id}`);
+    return null;
+  }
 
+  console.log(`[Storage/updateScrapedTime] Updating lastScrapedAt for ID: ${id}, Source: ${source}`);
+  const ModelToUse = source === 'google' ? GoogleBusinessUrlModel : FacebookBusinessUrlModel;
+
+  try {
+    const updatedDoc = await ModelToUse.findByIdAndUpdate(
+      id,
+      { $set: { lastScrapedAt: new Date() } },
+      { new: true }
+    ).lean().exec(); 
+
+    if (updatedDoc) {
+      console.log(`[Storage/updateScrapedTime] Successfully updated ${updatedDoc.name}`);
+      return { ...updatedDoc, source: updatedDoc.source || source } as IBusinessUrl;
+    } else {
+      console.warn(`[Storage/updateScrapedTime] Document not found for update. ID: ${id}, Source: ${source}`);
+      return null;
+    }
+  } catch (error) {
+    const err = error as Error;
+    console.error(`[Storage/updateScrapedTime] Error updating ID ${id}, Source ${source}:`, err.message);
+    throw err; 
+  }
+};
 interface GetReviewsOptions {
   limit?: number;    
   offset?: number;   
   minRating?: number;
 }
-
 export const getReviewBatchForBusinessUrl = async (
-  businessUrlObjectId: string, 
-  source: 'google' | 'facebook' 
+  urlHash: string, 
+  source: 'google' | 'facebook'
 ): Promise<IReviewBatch | null> => {
   await ensureDbConnected();
-  if (!Types.ObjectId.isValid(businessUrlObjectId)) {
-    console.warn(`[Storage/getReviewBatch] Invalid businessUrlObjectId: ${businessUrlObjectId}`);
+  if (!urlHash || !source) {
+    console.warn(`[Storage/getReviewBatch] urlHash or source is missing. Hash: ${urlHash}, Source: ${source}`);
     return null;
   }
-  if (!source) { 
-    console.warn(`[Storage/getReviewBatch] Source is undefined for businessUrlObjectId: ${businessUrlObjectId}`);
-    return null;
-  }
-  console.log(`[Storage/getReviewBatch] Querying for businessUrlId: ${businessUrlObjectId}, source: ${source}`);
+  console.log(`[Storage/getReviewBatch] Querying for urlHash: "${urlHash}", source: "${source}"`);
   const ReviewModelToUse = source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
+
   try {
-    let reviewBatch = await ReviewModelToUse.findOne({
-      businessUrlId: new Types.ObjectId(businessUrlObjectId), 
-      source: source 
-    })
-    .lean().exec();
+    const reviewBatch = await ReviewModelToUse.findOne({ urlHash: urlHash }) // Query by urlHash
+      .lean()
+      .exec();
+
     if (reviewBatch) {
-      console.log(`[Storage/getReviewBatch] Found review batch for businessUrlId ${businessUrlObjectId} with ${reviewBatch.reviews?.length || 0} reviews.`);
+      console.log(`[Storage/getReviewBatch] Found review batch for urlHash ${urlHash} with ${reviewBatch.reviews?.length || 0} reviews.`);
+      return { ...(reviewBatch as any), source: source } as IReviewBatch;
     } else {
-      console.log(`[Storage/getReviewBatch] No review batch found for businessUrlId ${businessUrlObjectId} and source ${source}.`);
+      console.log(`[Storage/getReviewBatch] No review batch found for urlHash ${urlHash} and source ${source}.`);
+      return null;
     }
-    return reviewBatch as IReviewBatch | null;
   } catch (dbError: unknown) {
     const err = dbError as Error;
-    console.error(`[Storage/getReviewBatch] DB Error for businessUrlId ${businessUrlObjectId}, source ${source}:`, err.message, err.stack);
-    throw new Error(`Database error in getReviewBatchForBusinessUrl: ${err.message}`);
+    console.error(`[Storage/getReviewBatch] DB Error for urlHash :`, err.message, err.stack);
+    throw new Error(`Database error while fetching review batch: ${err.message}`);
   }
 };
 export const getFilteredReviewsFromBatch = (
@@ -385,20 +431,21 @@ export const getWidgetById = async (id: string): Promise<IWidget | null> => {
   if (!Types.ObjectId.isValid(id)) return null;
   return WidgetModel.findById(id).populate('businessUrlId').lean().exec();
 };
-
 export const getWidgetsByUserId = async (userId: string): Promise<IWidget[]> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(userId)) return [];
-  return WidgetModel.find({ userId: new Types.ObjectId(userId) })
-    .populate({ path: 'businessUrlId', model: BusinessUrlModel }) 
+  console.log(`[Storage/getWidgetsByUserId] Fetching widgets for userId: ${userId}`);
+  const widgets = await WidgetModel.find({ userId: new Types.ObjectId(userId) })
     .sort({ createdAt: -1 })
     .lean()
     .exec();
+  console.log(`[Storage/getWidgetsByUserId] Found ${widgets.length} widgets.`);
+  return widgets as IWidget[]; 
 };
-
 interface CreateWidgetArgs {
   userId: string;
   businessUrlId: string;
+  businessUrlSource: 'google' | 'facebook';
   name: string;
   type?: string;
   maxReviews?: number;
@@ -411,10 +458,10 @@ export const createWidget = async (widgetData: CreateWidgetArgs): Promise<IWidge
     ...widgetData,
     userId: new Types.ObjectId(widgetData.userId),
     businessUrlId: new Types.ObjectId(widgetData.businessUrlId),
+    businessUrlSource: widgetData.businessUrlSource,
   });
   return newWidget.save();
 };
-
 interface UpdateWidgetArgs {
   name?: string;
   type?: string;
@@ -436,19 +483,16 @@ export const updateWidget = async (id: string, widgetData: UpdateWidgetArgs): Pr
   }
   return WidgetModel.findByIdAndUpdate(id, { $set: updatePayload }, { new: true }).lean().exec();
 };
-
 export const incrementWidgetViews = async (id: string): Promise<IWidget | null> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(id)) return null;
   return WidgetModel.findByIdAndUpdate(id, { $inc: { views: 1 } }, { new: true }).exec();
 };
-
 export const deleteWidget = async (id: string): Promise<{ acknowledged: boolean; deletedCount: number }> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(id)) return { acknowledged: false, deletedCount: 0 };
   return WidgetModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
 };
-
 export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStats> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(userId)) {
@@ -520,3 +564,27 @@ export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStat
     reviewsBySource,
   };
 }
+
+export const getReviewAggregates = async (businessUrlObjectId: string, source: 'google' | 'facebook') => {
+  await ensureDbConnected();
+  const ReviewModelToUse = source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
+  const result = await ReviewModelToUse.aggregate([
+    { $match: { businessUrlId: new Types.ObjectId(businessUrlObjectId) } },
+    { $unwind: '$reviews' },
+    { $match: { 'reviews.rating': { $type: "number" } } }, 
+    {
+      $group: {
+        _id: '$businessUrlId',
+        totalReviews: { $sum: 1 },
+        averageRating: { $avg: '$reviews.rating' }
+      }
+    }
+  ]);
+  if (result.length > 0) {
+    return {
+      totalReviews: result[0].totalReviews,
+      averageRating: parseFloat(result[0].averageRating.toFixed(1)) || 0,
+    };
+  }
+  return { totalReviews: 0, averageRating: 0 };
+};

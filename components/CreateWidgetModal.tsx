@@ -54,12 +54,6 @@ interface IReviewItem {
   postedAt: string;
   profilePicture?: string;
 }
-// interface PreviewDataState {
-//   reviews: IReviewItem[];
-//   isLoading: boolean;
-//   error?: string | null;
-// }
-
 interface CreateWidgetModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -334,8 +328,8 @@ const CreateWidgetModal = ({
                             onClick={() => form.setValue('themeColor', color.value, { shouldValidate: true, shouldDirty: true })}
                             className={`w-7 h-7 rounded-full border-2 hover:opacity-80 transition-opacity 
                               ${field.value === color.value 
-                                ? 'ring-2 ring-offset-2 dark:ring-offset-slate-900 ring-primary border-primary' 
-                                : 'border-transparent dark:border-slate-700' 
+                                ? 'ring-2 ring-offset-2 ring-primary border-primary' 
+                                : 'border-transparent' 
                               }`}
                             style={{ backgroundColor: color.value }}
                           />
@@ -483,19 +477,19 @@ const CreateWidgetModal = ({
           </TabsContent>
 
           <TabsContent value="preview" className="py-6">
-            <div className="min-h-[300px] p-4 border border-dashed rounded-md bg-slate-50 dark:bg-slate-800/50">
+            <div className="min-h-[300px] p-4 border border-dashed rounded-md bg-slate-50">
               {" "}
               {!selectedBusinessUrlId ? (
                 <div className="text-center py-10 flex flex-col items-center justify-center h-full">
                   <i className="fas fa-search text-3xl text-slate-400 mb-4"></i>
-                  <p className="text-slate-500 dark:text-slate-400">
+                  <p className="text-slate-500">
                     Select a business source in settings to see a preview.
                   </p>
                 </div>
               ) : isPreviewReviewsLoading ? (
                 <div className="text-center py-10 flex flex-col items-center justify-center h-full">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                  <p className="mt-3 text-slate-600 dark:text-slate-400">
+                  <p className="mt-3 text-slate-600">
                     Loading preview...
                   </p>
                 </div>
@@ -513,7 +507,7 @@ const CreateWidgetModal = ({
           </TabsContent>
         </Tabs>
         <DialogFooter className="pt-6">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button className="text-gray-800" type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
           {activeTab === "settings" ? (
@@ -541,8 +535,9 @@ const CreateWidgetModal = ({
                   }
                 });
               }}
+              className="text-gray-800"
             >
-              Next: Preview <i className="fas fa-arrow-right ml-2 text-xs"></i>
+              Next: Preview <i className="fas fa-arrow-right ml-2 text-xs text-gray-800"></i>
             </Button>
           ) : (
             <Button

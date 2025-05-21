@@ -147,7 +147,7 @@ const Dashboard = () => {
     return (
       <Layout>
         <div className="flex justify-center items-center h-screen">
-          <p className="text-lg text-gray-600 dark:text-gray-400">Loading Dashboard...</p>
+          <p className="text-lg text-gray-600">Loading Dashboard...</p>
         </div>
       </Layout>
     );
@@ -163,7 +163,7 @@ const Dashboard = () => {
         <h1 className="text-2xl font-heading font-bold text-gray-800 mb-1">
           Welcome back, {session.user?.name || 'User'}!
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600">
           Here&apos;s an overview of your review widgets and performance
         </p>
       </div>
@@ -174,8 +174,8 @@ const Dashboard = () => {
         title="Total Widgets"
         value={isStatsLoading ? "..." : totalWidgetsDisplay.toString()}
         icon="th-large"
-        iconBgClass="bg-primary-100 dark:bg-primary-900"
-        iconTextClass="text-primary-500 dark:text-primary-300"
+        iconBgClass="bg-primary-100"
+        iconTextClass="text-primary-500"
         isLoading={isStatsLoading}
         change={null} 
       />
@@ -183,7 +183,7 @@ const Dashboard = () => {
           title="Total Reviews"
           value={isStatsLoading ? "..." : totalReviewsDisplay.toString()}
           icon="star"
-          iconBgClass="bg-secondary-100 dark:bg-secondary-900"
+          iconBgClass="bg-secondary-100 "
           iconTextClass="text-secondary-500"
           isLoading={isStatsLoading}
           change={null} 
@@ -192,7 +192,7 @@ const Dashboard = () => {
           title="Avg. Rating"
           value={isStatsLoading ? "..." : averageRatingDisplay}
           icon="star-half-alt"
-          iconBgClass="bg-warning-100 dark:bg-warning-900"
+          iconBgClass="bg-warning-100"
           iconTextClass="text-warning-500"
           isLoading={isStatsLoading}
           change={null} 
@@ -201,7 +201,7 @@ const Dashboard = () => {
           title="Widget Views"
           value={isStatsLoading ? "..." : totalViewsDisplay.toLocaleString()}
           icon="eye"
-          iconBgClass="bg-success-100 dark:bg-success-900"
+          iconBgClass="bg-success-100"
           iconTextClass="text-success-500"
           isLoading={isStatsLoading}
           change={null} 
@@ -211,7 +211,7 @@ const Dashboard = () => {
       {/* Widgets Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-heading font-semibold text-gray-800 dark:text-white">
+          <h2 className="text-xl font-heading font-semibold text-gray-800">
             Your Review Widgets
           </h2>
           <button
@@ -227,8 +227,8 @@ const Dashboard = () => {
           {isWidgetsLoading && !widgetsError ? (
             // Loading state
             Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 h-48 animate-pulse">
-                <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+              <div key={index} className="bg-white  rounded-xl shadow-sm border border-gray-100 p-5 h-48 animate-pulse">
+                <div className="w-full h-full bg-gray-200 rounded-lg"></div>
               </div>
             ))
           ) : widgets.length > 0 ? (
@@ -238,13 +238,13 @@ const Dashboard = () => {
                 <WidgetCard key={widget._id} widget={widget} />
               ))}
               {/* Add Widget Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden widget-card flex flex-col">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden widget-card flex flex-col">
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
-                  <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 mb-5">
+                  <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-5">
                     <i className="fas fa-plus text-xl"></i>
                   </div>
-                  <h3 className="text-center font-medium text-gray-800 dark:text-white mb-2">Create a New Widget</h3>
-                  <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-4">
+                  <h3 className="text-center font-medium text-gray-800 mb-2">Create a New Widget</h3>
+                  <p className="text-center text-gray-500 text-sm mb-4">
                     Connect to Google or Facebook and start displaying your reviews
                   </p>
                   <button
@@ -259,17 +259,17 @@ const Dashboard = () => {
             </>
           ) : (
             // No widgets state
-            <div className="col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center">
-              <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 mb-5">
+            <div className="col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+              <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-5">
                 <i className="fas fa-th-large text-xl"></i>
               </div>
-              <h3 className="font-medium text-gray-800 dark:text-white mb-2">No Widgets Found</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+              <h3 className="font-medium text-gray-800 mb-2">No Widgets Found</h3>
+              <p className="text-gray-500 text-sm mb-4">
                 Create your first widget to start showcasing your reviews
               </p>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition duration-150"
+                className="inline-flex items-center px-4 py-2 bg-primary-500 rounded-lg text-sm font-medium hover:bg-primary-600 transition duration-150"
               >
                 <i className="fas fa-plus mr-2"></i>
                 Create First Widget
@@ -282,7 +282,7 @@ const Dashboard = () => {
       {/* Latest Reviews Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-heading font-semibold text-gray-800 dark:text-white">
+          <h2 className="text-xl font-heading font-semibold text-gray-800">
             Latest Reviews
           </h2>
           <Link href="/reviews" className="text-primary-500 hover:text-primary-600 text-sm font-medium transition duration-150">

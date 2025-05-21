@@ -166,7 +166,7 @@ const Reviews = () => {
     <Layout>
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5">
-          <h1 className="text-2xl font-heading font-bold text-gray-800 dark:text-white mb-4 sm:mb-0">
+          <h1 className="text-2xl font-heading font-bold text-gray-800 mb-4 sm:mb-0">
             Manage Review Sources
           </h1>
           <Button 
@@ -178,7 +178,7 @@ const Reviews = () => {
           </Button>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+        <div className="bg-white  rounded-xl shadow-sm border border-gray-100 mb-6">
           <div className="p-6">
           <Tabs 
             defaultValue="all" 
@@ -193,7 +193,7 @@ const Reviews = () => {
             </Tabs>
 
             {isBusinessUrlsLoading ? (
-              <div className="animate-pulse flex h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="animate-pulse flex h-10 bg-gray-200 rounded"></div>
             ) : filteredBusinessUrls.length > 0 ? (
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
                 <div className="w-full sm:w-auto sm:min-w-[250px]">
@@ -219,16 +219,16 @@ const Reviews = () => {
                   <Button 
                     onClick={() => scrapeReviewsMutation.mutate(selectedBusinessUrl)}
                     disabled={scrapeReviewsMutation.isPending}
-                    className="bg-secondary-500 hover:bg-secondary-600 mt-4 sm:mt-0 self-start sm:self-end"
+                    className="bg-secondary-500 hover:bg-secondary-600 mt-4 sm:mt-0 self-start sm:self-end text-gray-800"
                   >
                     {scrapeReviewsMutation.isPending ? (
                       <>
-                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        <i className="fas fa-spinner fa-spin mr-2 text-gray-800"></i>
                         Scraping...
                       </>
                     ) : (
                       <>
-                        <i className="fas fa-sync-alt mr-2"></i>
+                        <i className="fas fa-sync-alt mr-2 text-gray-800"></i>
                         Refresh Reviews
                       </>
                     )}
@@ -237,20 +237,20 @@ const Reviews = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 mb-5">
+                <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:text-gray-500 mb-5">
                   <i className="fas fa-store text-xl"></i>
                 </div>
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">No Businesses Found</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                <h3 className="text-lg font-medium text-gray-800 mb-2">No Businesses Found</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
                   {activeTab === "all"
                       ? "You haven't added any business sources yet."
                       : `No ${activeTab} business sources found.`}
                 </p>
                 <Button 
                   onClick={() => setIsAddBusinessModalOpen(true)}
-                  className="bg-primary-500 hover:bg-primary-600"
+                  className="bg-primary-500 hover:bg-primary-600 text-gray-800"
                 >
-                  <i className="fas fa-plus mr-2"></i>
+                  <i className="fas fa-plus mr-2 text-gray-800"></i>
                   Add First Business
                 </Button>
               </div>
@@ -262,26 +262,26 @@ const Reviews = () => {
                 isLoading={isReviewsLoading}
                 emptyState={
                   <div className="text-center py-8">
-                    <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 mb-5">
+                    <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 text-gray-400  mb-5">
                       <i className="fas fa-star text-xl"></i>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">No Reviews Found</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                    <h3 className="text-lg font-medium text-gray-800  mb-2">No Reviews Found</h3>
+                    <p className="text-gray-500  mb-6 max-w-md mx-auto">
                       This business does not have any reviews yet. Click the button below to scrape reviews.
                     </p>
                     <Button 
                       onClick={() => scrapeReviewsMutation.mutate(selectedBusinessUrl)}
                       disabled={scrapeReviewsMutation.isPending}
-                      className="bg-secondary-500 hover:bg-secondary-600"
+                      className="bg-secondary-500 hover:bg-secondary-600 text-gray-800"
                     >
                       {scrapeReviewsMutation.isPending ? (
                         <>
-                          <i className="fas fa-spinner fa-spin mr-2"></i>
+                          <i className="fas fa-spinner fa-spin mr-2 text-gray-800"></i>
                           Scraping...
                         </>
                       ) : (
                         <>
-                          <i className="fas fa-sync-alt mr-2"></i>
+                          <i className="fas fa-sync-alt mr-2 text-gray-800"></i>
                           Scrape Reviews
                         </>
                       )}

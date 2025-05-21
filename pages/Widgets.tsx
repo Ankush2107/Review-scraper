@@ -15,12 +15,6 @@ interface IBusinessUrlForWidget {
   source: 'google' | 'facebook';
   name: string; 
 }
-interface IBusinessUrlForSelect { 
-    _id: string;
-    name: string;
-    url: string;
-    source: 'google' | 'facebook';
-}
 interface IWidget {
   _id: string;
   name: string;
@@ -69,7 +63,6 @@ const Widgets = () => {
     queryFn: () => apiRequest<{ businessUrls: IBusinessUrlForDropdown[] }>("GET", '/api/business-urls'),
     enabled: authStatus === 'authenticated',
   });
-  const businessUrlsToUse = businessUrlsData?.businessUrls || [];
   console.log(`[${router.pathname}] businessUrlsData from useQuery:`, businessUrlsData);
   const derivedBusinessUrls = useMemo(() => businessUrlsData?.businessUrls || [], [businessUrlsData]);
   console.log(`[${router.pathname}] derivedBusinessUrls:`, derivedBusinessUrls);
@@ -104,7 +97,7 @@ const Widgets = () => {
     <Layout>
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5">
-          <h1 className="text-2xl font-heading font-bold text-gray-800 dark:text-white mb-4 sm:mb-0">
+          <h1 className="text-2xl font-heading font-bold text-gray-800  mb-4 sm:mb-0">
             My Widgets
           </h1>
           <Button 
@@ -115,7 +108,7 @@ const Widgets = () => {
             Create Widget
           </Button>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <Tabs 
             defaultValue="all" 
             value={activeTab} 
@@ -131,7 +124,7 @@ const Widgets = () => {
               {isWidgetsLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {Array.from({ length: 6 }).map((_, index) => (
-                    <div key={index} className="bg-gray-100 dark:bg-gray-700 rounded-xl h-48 animate-pulse"></div>
+                    <div key={index} className="bg-gray-100 rounded-xl h-48 animate-pulse"></div>
                   ))}
                 </div>
               ) : filteredWidgets.length > 0 ? (
@@ -148,20 +141,20 @@ const Widgets = () => {
                       isDeleting={deleteMutation.isPending && deleteMutation.variables === widget._id}
                     />
                   ))}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden widget-card flex flex-col">
+                  <div className="bg-white  rounded-xl shadow-sm border border-gray-100 overflow-hidden widget-card flex flex-col">
                     <div className="flex-1 flex flex-col items-center justify-center p-8">
-                      <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 mb-5">
+                      <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-5">
                         <i className="fas fa-plus text-xl"></i>
                       </div>
-                      <h3 className="text-center font-medium text-gray-800 dark:text-white mb-2">Create a New Widget</h3>
-                      <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-4">
+                      <h3 className="text-center font-medium text-gray-800 mb-2">Create a New Widget</h3>
+                      <p className="text-center text-gray-500 text-sm mb-4">
                         Connect to Google or Facebook and start displaying your reviews
                       </p>
                       <Button 
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-primary-500 hover:bg-primary-600"
+                        className="bg-primary-500 hover:bg-primary-600 text-gray-800"
                       >
-                        <i className="fas fa-plus mr-2"></i>
+                        <i className="fas fa-plus mr-2 text-gray-800"></i>
                         Create Widget
                       </Button>
                     </div>
@@ -169,20 +162,20 @@ const Widgets = () => {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 mb-5">
+                  <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 text-gray-400  mb-5">
                     <i className="fas fa-th-large text-xl"></i>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">No Widgets Found</h3>
-                  <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Widgets Found</h3>
+                  <p className="text-gray-500 mb-6 max-w-md mx-auto">
                     {activeTab === "all" 
                       ? "You haven't created any widgets yet. Create your first widget to start showcasing your reviews."
                       : `You haven't created any ${activeTab} widgets yet.`}
                   </p>
                   <Button 
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="bg-primary-500 hover:bg-primary-600"
+                    className="bg-primary-500 hover:bg-primary-600 text-gray-800"
                   >
-                    <i className="fas fa-plus mr-2"></i>
+                    <i className="fas fa-plus mr-2 text-gray-800"></i>
                     Create First Widget
                   </Button>
                 </div>

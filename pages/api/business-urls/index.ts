@@ -6,7 +6,6 @@ import * as storage from '../../../lib/storage';
 import { businessUrlSchema } from '../../../lib/schemas/businessUrl'; 
 import { ZodError } from 'zod';
 import dbConnect from '../../../lib/mongodb';
-import { IBusinessUrl } from '../../../models/BusinessUrl.model'
 import { IBusinessUrlDisplay } from '@/lib/storage';
 
 interface BusinessUrlsApiResponse {

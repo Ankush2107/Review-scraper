@@ -20,5 +20,4 @@ const BusinessUrlSchema: Schema<IBusinessUrl> = new Schema({
 });
 const GoogleBusinessUrlModel: Model<IBusinessUrl> = mongoose.models.GoogleBusinessUrl || mongoose.model<IBusinessUrl>('GoogleBusinessUrl', BusinessUrlSchema, 'business_urls'); 
 const FacebookBusinessUrlModel: Model<IBusinessUrl> = mongoose.models.FacebookBusinessUrl || mongoose.model<IBusinessUrl>('FacebookBusinessUrl', BusinessUrlSchema, 'facebook_business_urls');
-
 export { GoogleBusinessUrlModel, FacebookBusinessUrlModel };

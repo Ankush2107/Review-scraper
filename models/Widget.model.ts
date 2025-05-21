@@ -4,6 +4,7 @@ export interface IWidget extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   businessUrlId: Types.ObjectId;
+  businessUrlSource: 'google' | 'facebook';
   name: string;
   type: string;
   maxReviews: number;
@@ -16,7 +17,8 @@ export interface IWidget extends Document {
 
 const WidgetSchema: Schema<IWidget> = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  businessUrlId: { type: Schema.Types.ObjectId, ref: 'BusinessUrl', required: true, index: true },
+  businessUrlSource: { type: String, enum: ['GoogleBusinessUrl', 'FacebookBusinessUrl'], required: true },
+  businessUrlId: { type: Schema.Types.ObjectId, refPath: 'businessUrlSource', required: true, index: true },
   name: { type: String, required: true },
   type: { type: String, enum: ['list', 'grid', 'carousel', 'badge', 'masonry'], default: 'list' },
   maxReviews: { type: Number, default: 10 },
