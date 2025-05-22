@@ -38,7 +38,7 @@ export default async function handler(
       if (!businessUrl) {
         return res.status(404).json({ message: 'Not Found: Business URL not found.' });
       }
-      if (businessUrl.userId.toString() !== userId_string) {
+      if (!businessUrl.userId || businessUrl.userId.toString() !== userId_string) {
         return res.status(403).json({ message: 'Forbidden: You do not have permission to view this resource.' });
       }
       return res.status(200).json(businessUrl);

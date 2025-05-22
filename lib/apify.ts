@@ -93,7 +93,7 @@ export const scrapeGoogleReviews = async (businessUrlId: string, maxReviewsParam
       const { items } = await googleClient.dataset(run.defaultDatasetId).listItems();
   
       if (!items || items.length === 0) {
-        await updateBusinessUrlScrapedTime(businessUrlId); 
+        await updateBusinessUrlScrapedTime(businessUrlId, 'google'); 
         console.log(`No new Google reviews found from Apify for business ID: ${businessUrlId}`);
         return { success: true, message: 'No new reviews found from Apify.', reviews: [] };
       }
@@ -109,7 +109,7 @@ export const scrapeGoogleReviews = async (businessUrlId: string, maxReviewsParam
           source: 'google',
           reviews: parsedApifyReviews
       });
-      await updateBusinessUrlScrapedTime(businessIdString);
+      await updateBusinessUrlScrapedTime(businessIdString, 'google');
       console.log(`Successfully scraped and upserted ${parsedApifyReviews.length} Google reviews for business ID: ${businessUrlId}`);
       return { success: true, message: `Scraped ${parsedApifyReviews.length} Google reviews.`, reviews: parsedApifyReviews };
   
@@ -137,7 +137,7 @@ export const scrapeFacebookReviews = async (businessUrlId: string, maxReviewsPar
       const { items } = await facebookClient.dataset(run.defaultDatasetId).listItems();
   
       if (!items || items.length === 0) {
-        await updateBusinessUrlScrapedTime(businessUrlId);
+        await updateBusinessUrlScrapedTime(businessUrlId, 'facebook');
         console.log(`No new Facebook reviews found from Apify for business ID: ${businessUrlId}`);
         return { success: true, message: 'No new reviews found from Apify.', reviews: [] };
       }
@@ -151,7 +151,7 @@ export const scrapeFacebookReviews = async (businessUrlId: string, maxReviewsPar
           source: 'facebook',
           reviews: parsedApifyReviews
       });
-      await updateBusinessUrlScrapedTime(businessIdString);
+      await updateBusinessUrlScrapedTime(businessIdString, 'facebook');
       console.log(`Successfully scraped and upserted ${parsedApifyReviews.length} Facebook reviews for business ID: ${businessUrlId}`);
       return { success: true, message: `Scraped ${parsedApifyReviews.length} Facebook reviews.`, reviews: parsedApifyReviews };
   

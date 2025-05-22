@@ -4,8 +4,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { apiRequest } from "../lib/queryClient";
 import Layout from "../components/Layout";
-import WidgetCard from "../components/WidgetCard";
+import WidgetCard, { IWidget } from "../components/WidgetCard";
 import CreateWidgetModal from "../components/CreateWidgetModal";
+import WidgetCodeModal, { IWidgetForCodeModal } from "../components/WidgetCodeModal";
 import { useToast } from "../hooks/use-toast";
 import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -38,6 +39,9 @@ type WidgetTab = "all" | "google" | "facebook";
 
 const Widgets = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); 
+  const [newlyCreatedWidget, setNewlyCreatedWidget] = useState<IWidget | null>(null);
+
   const [activeTab, setActiveTab] = useState<WidgetTab>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,14 +71,30 @@ const Widgets = () => {
   const derivedBusinessUrls = useMemo(() => businessUrlsData?.businessUrls || [], [businessUrlsData]);
   console.log(`[${router.pathname}] derivedBusinessUrls:`, derivedBusinessUrls);
   const deleteMutation = useMutation<unknown, Error, string>({ 
-    mutationFn: (widgetId: string) => apiRequest("DELETE", `/api/widgets/${widgetId}`),
+    mutationFn: async (widgetId: string) => {
+      const response = await apiRequest("DELETE", `/api/widgets/${widgetId}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete widget');
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['widgets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      toast({ title: "Widget Deleted", description: "The widget has been successfully deleted." });
+      
+      toast({ 
+        title: "Widget Deleted", 
+        description: "The widget has been successfully deleted.",
+        variant: "default"
+      });
     },
     onError: (error: Error) => {
-      toast({ title: "Deletion Failed", description: error.message || "Failed to delete widget.", variant: "destructive" });
+      toast({ 
+        title: "Deletion Failed", 
+        description: error.message || "Failed to delete widget.", 
+        variant: "destructive" 
+      });
     },
   });
   const filteredWidgets = useMemo(() => {
@@ -84,15 +104,21 @@ const Widgets = () => {
     }
     return allWidgets.filter((widget: IWidget) => widget.businessUrl?.source === activeTab);
   }, [allWidgets, activeTab]);
-  const handleWidgetCreated = () => {
-    setIsCreateModalOpen(false);
-    queryClient.invalidateQueries({ queryKey: ['widgets'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-    toast({title: "Widget Created", description: "New widget added successfully!"});
+  const handleWidgetSavedAndShowCode = (createdWidget: IWidget) => {
+    setIsCreateModalOpen(false); 
+    setNewlyCreatedWidget(createdWidget); 
+    setIsCodeModalOpen(true);
   };
   if (authStatus === 'loading' || authStatus === 'unauthenticated') {
     return <Layout><div className="flex justify-center items-center h-screen"><p>Loading widgets...</p></div></Layout>;
   }
+
+  const widgetDataForCodeModal: IWidgetForCodeModal | undefined = newlyCreatedWidget ? {
+    _id: newlyCreatedWidget._id,
+    name: newlyCreatedWidget.name,
+    themeColor: newlyCreatedWidget.themeColor,
+    layout: newlyCreatedWidget.type, // Assuming IWidget.type maps to IWidgetForCodeModal.layout
+  } : undefined;
   return (
     <Layout>
       <div className="mb-8">
@@ -134,9 +160,7 @@ const Widgets = () => {
                       key={widget._id} 
                       widget={widget} 
                       onDelete={() => {
-                        if (window.confirm("Are you sure you want to delete this widget?")) {
-                          deleteMutation.mutate(widget._id); 
-                        }
+                        deleteMutation.mutate(widget._id); 
                       }}
                       isDeleting={deleteMutation.isPending && deleteMutation.variables === widget._id}
                     />
@@ -188,10 +212,20 @@ const Widgets = () => {
         <CreateWidgetModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          onWidgetCreated={handleWidgetCreated}
+          onWidgetCreated={handleWidgetSavedAndShowCode}
           businessUrls={derivedBusinessUrls} 
           isLoadingBusinessUrls={isBusinessUrlsLoading}
        />
+      )}
+      {isCodeModalOpen && widgetDataForCodeModal && (
+        <WidgetCodeModal
+          isOpen={isCodeModalOpen}
+          onClose={() => {
+            setIsCodeModalOpen(false);
+            setNewlyCreatedWidget(null); 
+          }}
+          widget={widgetDataForCodeModal}
+        />
       )}
     </Layout>
   );

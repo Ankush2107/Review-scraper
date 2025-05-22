@@ -83,5 +83,8 @@ export const handleZodError = (err: ZodError) => {
     path: e.path.join('.'),
     message: e.message
   }));
-  return { errors };
+  return { 
+    message: 'Validation error',
+    errors 
+  };
 };

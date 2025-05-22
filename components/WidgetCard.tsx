@@ -5,10 +5,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu"; 
+} from "@/components/ui/dropdown-menu"; 
 import { Button } from "../components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+
 interface IBusinessUrlForWidgetCard {
   _id: string;
   source: 'google' | 'facebook';
@@ -43,6 +51,7 @@ interface WidgetCardProps {
 const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) => {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const createdDate = widget.createdAt
     ? new Date(widget.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -93,7 +102,11 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
 
   return (
     <>
-      <div className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden widget-card transition-all duration-300 hover:shadow-xl ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div
+        className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden widget-card transition-all duration-300 hover:shadow-xl ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+        onClick={() => setIsCodeModalOpen(true)}
+        style={{ cursor: 'pointer' }}
+      >
         <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center min-w-0">
             <div className={`w-9 h-9 rounded-lg ${getSourceBgClass()} flex items-center justify-center ${getSourceTextClass()} flex-shrink-0`}>
@@ -103,39 +116,76 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
               {widget.name}
             </h3>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
-                <i className="fas fa-ellipsis-v"></i> 
-                <span className="sr-only">Open widget menu</span>
+          <div className="flex items-center gap-2">
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center justify-center border border-red-200"
+                onClick={e => {
+                  e.stopPropagation();
+                  setIsDeleteModalOpen(true);
+                }}
+                disabled={isDeleting}
+                title="Delete widget"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-5 w-5" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
+                  />
+                </svg>
+                <span className="sr-only">Delete widget</span>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsPreviewModalOpen(true)}>
-                <i className="fas fa-eye mr-2 h-4 w-4" /> Preview
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsCodeModalOpen(true)}>
-                <i className="fas fa-code mr-2 h-4 w-4 text-gray-800" /> Get Code
-              </DropdownMenuItem>
-              {onEdit && ( 
-                <DropdownMenuItem onClick={() => onEdit(widget._id)}>
-                  <i className="fas fa-pen mr-2 h-4 w-4" /> Edit
-                </DropdownMenuItem>
-              )}
-              {onDelete && ( 
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={onDelete}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-500  "
-                    disabled={isDeleting}
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-8 h-8 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-5 w-5" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
                   >
-                    <i className="fas fa-trash-alt mr-2 h-4 w-4" /> Delete
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" 
+                    />
+                  </svg>
+                  <span className="sr-only">Open widget menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={e => { e.stopPropagation(); setIsPreviewModalOpen(true); }}>
+                  <i className="fas fa-eye mr-2 h-4 w-4" /> Preview
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={e => { e.stopPropagation(); setIsCodeModalOpen(true); }}>
+                  <i className="fas fa-code mr-2 h-4 w-4 text-gray-800" /> Get Code
+                </DropdownMenuItem>
+                {onEdit && ( 
+                  <DropdownMenuItem onClick={e => { e.stopPropagation(); onEdit(widget._id); }}>
+                    <i className="fas fa-pen mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         <div className="px-5 py-4">
@@ -169,6 +219,47 @@ const WidgetCard = ({ widget, onDelete, onEdit, isDeleting }: WidgetCardProps) =
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Widget</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the widget &quot;{widget.name}&quot;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setIsDeleteModalOpen(false);
+                onDelete?.();
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <i className="fas fa-spinner fa-spin mr-2"></i>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-trash-alt mr-2"></i>
+                  Delete
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {isPreviewModalOpen && (
         <WidgetPreviewModal
           isOpen={isPreviewModalOpen}

@@ -97,23 +97,53 @@ export const getBusinessUrlById = async (id: string): Promise<IBusinessUrl | nul
     return null;
   }
   console.log(`[Storage/getBusinessUrlById] Searching for ID: ${id}`);
-  let businessUrl = await GoogleBusinessUrlModel.findById(id).lean().exec();
-  if (businessUrl) {
-    console.log(`[Storage/getBusinessUrlById] Found in GoogleBusinessUrlModel:`, businessUrl.name);
-    return { ...businessUrl, source: businessUrl.source || 'google' } as IBusinessUrl;
+  
+  // Try Google first
+  const googleBusinessUrl = await GoogleBusinessUrlModel.findById(id).lean().exec();
+  if (googleBusinessUrl) {
+    console.log(`[Storage/getBusinessUrlById] Found in GoogleBusinessUrlModel:`, googleBusinessUrl.name);
+    return {
+      ...googleBusinessUrl,
+      source: 'google' as const
+    };
   }
+
+  // Try Facebook if not found in Google
   console.log(`[Storage/getBusinessUrlById] Not in Google, trying FacebookBusinessUrlModel for ID: ${id}`);
-  businessUrl = await FacebookBusinessUrlModel.findById(id).lean().exec();
-  if (businessUrl) {
-    console.log(`[Storage/getBusinessUrlById] Found in FacebookBusinessUrlModel:`, businessUrl.name);
-    return { ...businessUrl, source: businessUrl.source || 'facebook' } as IBusinessUrl;
+  const facebookBusinessUrl = await FacebookBusinessUrlModel.findById(id).lean().exec();
+  if (facebookBusinessUrl) {
+    console.log(`[Storage/getBusinessUrlById] Found in FacebookBusinessUrlModel:`, facebookBusinessUrl.name);
+    return {
+      ...facebookBusinessUrl,
+      source: 'facebook' as const
+    };
   }
+
   console.log(`[Storage/getBusinessUrlById] ID ${id} not found in any business URL collection.`);
   return null;
 };
 export const getBusinessUrlByUrlHash = async (urlHash: string): Promise<IBusinessUrl | null> => {
   await ensureDbConnected();
-  return BusinessUrlModel.findOne({ urlHash }).exec();
+  
+  // Try Google first
+  const googleBusinessUrl = await GoogleBusinessUrlModel.findOne({ urlHash }).lean().exec();
+  if (googleBusinessUrl) {
+    return {
+      ...googleBusinessUrl,
+      source: 'google' as const
+    };
+  }
+
+  // Try Facebook if not found in Google
+  const facebookBusinessUrl = await FacebookBusinessUrlModel.findOne({ urlHash }).lean().exec();
+  if (facebookBusinessUrl) {
+    return {
+      ...facebookBusinessUrl,
+      source: 'facebook' as const
+    };
+  }
+
+  return null;
 };
 export const getBusinessUrlsByUserId = async (userId: string): Promise<IBusinessUrlDisplay[]> => {
   await ensureDbConnected();
@@ -136,27 +166,25 @@ export const getBusinessUrlsByUserId = async (userId: string): Promise<IBusiness
       .lean()
       .exec();
     console.log(`[Storage/getBusinessUrlsByUserId] Found ${facebookUrlsRaw.length} Facebook URLs.`);
-    const combinedUrls: IBusinessUrlDisplay[] = [
-      ...googleUrlsRaw.map(doc => ({
-        _id: doc._id.toString(),
-        name: doc.name,
-        url: doc.url,
-        source: 'google',
-        userId: doc.userId?.toString(),
-      })),
-      ...facebookUrlsRaw.map(doc => ({
-        _id: doc._id.toString(),
-        name: doc.name,
-        url: doc.url,
-        source: 'facebook', 
-        userId: doc.userId?.toString(),
-      }))
-    ];
-    console.log(`[Storage/getBusinessUrlsByUserId] Combined ${combinedUrls.length} URLs for userId: ${userId}`);
-    combinedUrls.sort(() => {
-        return 0;
-    });
 
+    const googleUrls: IBusinessUrlDisplay[] = googleUrlsRaw.map(doc => ({
+      _id: doc._id.toString(),
+      name: doc.name,
+      url: doc.url,
+      source: 'google' as const,
+      userId: doc.userId?.toString(),
+    }));
+
+    const facebookUrls: IBusinessUrlDisplay[] = facebookUrlsRaw.map(doc => ({
+      _id: doc._id.toString(),
+      name: doc.name,
+      url: doc.url,
+      source: 'facebook' as const,
+      userId: doc.userId?.toString(),
+    }));
+
+    const combinedUrls = [...googleUrls, ...facebookUrls];
+    console.log(`[Storage/getBusinessUrlsByUserId] Combined ${combinedUrls.length} URLs for userId: ${userId}`);
     return combinedUrls;
 
   } catch (error) {
@@ -171,13 +199,48 @@ interface CreateBusinessUrlArgs {
   url: string;
   source: 'google' | 'facebook';
 }
-export const getAllBusinessUrlsForDisplay = async (): Promise<IBusinessUrl[]> => {
+export const getAllBusinessUrlsForDisplay = async (): Promise<IBusinessUrlDisplay[]> => {
   await ensureDbConnected();
-  const googleUrls = await GoogleBusinessUrlModel.find({}).select('name url source urlHash _id').lean().exec();
-  const facebookUrls = await FacebookBusinessUrlModel.find({}).select('name url source urlHash _id').lean().exec();
-  const processedGoogleUrls = googleUrls.map(doc => ({ ...doc, source: doc.source || 'google' })) as IBusinessUrl[];
-  const processedFacebookUrls = facebookUrls.map(doc => ({ ...doc, source: doc.source || 'facebook' })) as IBusinessUrl[];
-  return [...processedGoogleUrls, ...processedFacebookUrls].sort((a, b) => b.addedAt && a.addedAt ? b.addedAt.getTime() - a.addedAt.getTime() : 0);
+  console.log("[Storage/getAllBusinessUrlsForDisplay] Fetching all business URLs for display");
+
+  try {
+    const googleUrlsRaw = await GoogleBusinessUrlModel.find()
+      .sort({ addedAt: -1 })
+      .lean()
+      .exec();
+    console.log(`[Storage/getAllBusinessUrlsForDisplay] Found ${googleUrlsRaw.length} Google URLs.`);
+
+    const facebookUrlsRaw = await FacebookBusinessUrlModel.find()
+      .sort({ addedAt: -1 })
+      .lean()
+      .exec();
+    console.log(`[Storage/getAllBusinessUrlsForDisplay] Found ${facebookUrlsRaw.length} Facebook URLs.`);
+
+    const googleUrls: IBusinessUrlDisplay[] = googleUrlsRaw.map(doc => ({
+      _id: doc._id.toString(),
+      name: doc.name,
+      url: doc.url,
+      source: 'google' as const,
+      userId: doc.userId?.toString(),
+    }));
+
+    const facebookUrls: IBusinessUrlDisplay[] = facebookUrlsRaw.map(doc => ({
+      _id: doc._id.toString(),
+      name: doc.name,
+      url: doc.url,
+      source: 'facebook' as const,
+      userId: doc.userId?.toString(),
+    }));
+
+    const combinedUrls = [...googleUrls, ...facebookUrls];
+    console.log(`[Storage/getAllBusinessUrlsForDisplay] Combined ${combinedUrls.length} URLs for display`);
+    return combinedUrls;
+
+  } catch (error) {
+    const err = error as Error;
+    console.error("[Storage/getAllBusinessUrlsForDisplay] Error fetching business URLs:", err.message, err.stack);
+    throw new Error(`Database error while fetching business URLs: ${err.message}`);
+  }
 };
 export const createBusinessUrl = async (data: CreateBusinessUrlArgs): Promise<IBusinessUrlDisplay> => {
   await ensureDbConnected();
@@ -213,40 +276,40 @@ export const createBusinessUrl = async (data: CreateBusinessUrlArgs): Promise<IB
 };
 export const updateBusinessUrlScrapedTime = async (
   id: string,
-  source: 'google' | 'facebook' 
+  source: 'google' | 'facebook'
 ): Promise<IBusinessUrl | null> => {
   await ensureDbConnected();
   if (!Types.ObjectId.isValid(id)) {
-    console.warn(`[Storage/updateScrapedTime] Invalid ID: ${id}`);
-    return null;
-  }
-  if (!source) {
-    console.warn(`[Storage/updateScrapedTime] Missing source for ID: ${id}`);
+    console.warn(`[Storage/updateBusinessUrlScrapedTime] Invalid ID format: ${id}`);
     return null;
   }
 
-  console.log(`[Storage/updateScrapedTime] Updating lastScrapedAt for ID: ${id}, Source: ${source}`);
-  const ModelToUse = source === 'google' ? GoogleBusinessUrlModel : FacebookBusinessUrlModel;
+  const update = { lastScrapedAt: new Date() };
+  let updatedDoc;
 
-  try {
-    const updatedDoc = await ModelToUse.findByIdAndUpdate(
+  if (source === 'google') {
+    updatedDoc = await GoogleBusinessUrlModel.findByIdAndUpdate(
       id,
-      { $set: { lastScrapedAt: new Date() } },
+      update,
       { new: true }
-    ).lean().exec(); 
-
-    if (updatedDoc) {
-      console.log(`[Storage/updateScrapedTime] Successfully updated ${updatedDoc.name}`);
-      return { ...updatedDoc, source: updatedDoc.source || source } as IBusinessUrl;
-    } else {
-      console.warn(`[Storage/updateScrapedTime] Document not found for update. ID: ${id}, Source: ${source}`);
-      return null;
-    }
-  } catch (error) {
-    const err = error as Error;
-    console.error(`[Storage/updateScrapedTime] Error updating ID ${id}, Source ${source}:`, err.message);
-    throw err; 
+    ).lean().exec();
+  } else {
+    updatedDoc = await FacebookBusinessUrlModel.findByIdAndUpdate(
+      id,
+      update,
+      { new: true }
+    ).lean().exec();
   }
+
+  if (!updatedDoc) {
+    console.warn(`[Storage/updateBusinessUrlScrapedTime] No document found with ID: ${id}`);
+    return null;
+  }
+
+  return {
+    ...updatedDoc,
+    source
+  };
 };
 interface GetReviewsOptions {
   limit?: number;    
@@ -254,34 +317,13 @@ interface GetReviewsOptions {
   minRating?: number;
 }
 export const getReviewBatchForBusinessUrl = async (
-  urlHash: string, 
+  urlHash: string,
   source: 'google' | 'facebook'
 ): Promise<IReviewBatch | null> => {
   await ensureDbConnected();
-  if (!urlHash || !source) {
-    console.warn(`[Storage/getReviewBatch] urlHash or source is missing. Hash: ${urlHash}, Source: ${source}`);
-    return null;
-  }
-  console.log(`[Storage/getReviewBatch] Querying for urlHash: "${urlHash}", source: "${source}"`);
-  const ReviewModelToUse = source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
-
-  try {
-    const reviewBatch = await ReviewModelToUse.findOne({ urlHash: urlHash }) // Query by urlHash
-      .lean()
-      .exec();
-
-    if (reviewBatch) {
-      console.log(`[Storage/getReviewBatch] Found review batch for urlHash ${urlHash} with ${reviewBatch.reviews?.length || 0} reviews.`);
-      return { ...(reviewBatch as any), source: source } as IReviewBatch;
-    } else {
-      console.log(`[Storage/getReviewBatch] No review batch found for urlHash ${urlHash} and source ${source}.`);
-      return null;
-    }
-  } catch (dbError: unknown) {
-    const err = dbError as Error;
-    console.error(`[Storage/getReviewBatch] DB Error for urlHash :`, err.message, err.stack);
-    throw new Error(`Database error while fetching review batch: ${err.message}`);
-  }
+  const ModelToUse = source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
+  const reviewBatch = await ModelToUse.findOne({ urlHash }).lean().exec();
+  return reviewBatch ? { ...reviewBatch, source } : null;
 };
 export const getFilteredReviewsFromBatch = (
   reviewBatch: IReviewBatch | null,
@@ -437,30 +479,66 @@ export const getWidgetsByUserId = async (userId: string): Promise<IWidget[]> => 
   console.log(`[Storage/getWidgetsByUserId] Fetching widgets for userId: ${userId}`);
   const widgets = await WidgetModel.find({ userId: new Types.ObjectId(userId) })
     .sort({ createdAt: -1 })
+    .populate('businessUrlId')
     .lean()
     .exec();
-  console.log(`[Storage/getWidgetsByUserId] Found ${widgets.length} widgets.`);
-  return widgets as IWidget[]; 
+  return widgets.map(widget => {
+    const populatedWidget = widget as unknown as IWidget & { businessUrlId: IBusinessUrlDisplay };
+    return {
+      ...widget,
+      businessUrl: populatedWidget.businessUrlId
+        ? {
+            _id: populatedWidget.businessUrlId._id.toString(),
+            name: populatedWidget.businessUrlId.name,
+            source: populatedWidget.businessUrlId.source,
+            url: populatedWidget.businessUrlId.url,
+          }
+        : undefined,
+    } as IWidget;
+  });
 };
 interface CreateWidgetArgs {
   userId: string;
   businessUrlId: string;
-  businessUrlSource: 'google' | 'facebook';
+  businessUrlSource: 'GoogleBusinessUrl' | 'FacebookBusinessUrl';
   name: string;
-  type?: string;
+  type?: "grid" | "carousel" | "list" | "masonry" | "badge";
   maxReviews?: number;
   minRating?: number;
-  settings?: Record<string, unknown>;
+  themeColor?: string;
+  showRatings?: boolean;
+  showDates?: boolean;
+  showProfilePictures?: boolean;
+  settings?: {
+    themeColor?: string;
+    minRating?: number;
+    showRatings?: boolean;
+    showDates?: boolean;
+    showProfilePictures?: boolean;
+  };
 }
 export const createWidget = async (widgetData: CreateWidgetArgs): Promise<IWidget> => {
   await ensureDbConnected();
-  const newWidget = new WidgetModel({
-    ...widgetData,
+  console.log("[Storage/createWidget] Received data:", widgetData);
+  const newWidgetDocumentData = {
     userId: new Types.ObjectId(widgetData.userId),
     businessUrlId: new Types.ObjectId(widgetData.businessUrlId),
     businessUrlSource: widgetData.businessUrlSource,
-  });
-  return newWidget.save();
+    name: widgetData.name,
+    type: widgetData.type || 'grid', 
+    maxReviews: widgetData.maxReviews ?? 10,
+    minRating: widgetData.minRating ?? 0,
+    themeColor: widgetData.themeColor || '#3B82F6',
+    showRatings: widgetData.showRatings ?? true,
+    showDates: widgetData.showDates ?? true,
+    showProfilePictures: widgetData.showProfilePictures ?? true,
+    views: 0,
+  };
+  console.log("[Storage/createWidget] Data for new WidgetModel:", newWidgetDocumentData);
+  const newWidget = new WidgetModel(newWidgetDocumentData);
+  const savedWidget = await newWidget.save();
+  console.log("[Storage/createWidget] Widget saved:", savedWidget);
+  return savedWidget.toObject({ getters: true, virtuals: false }) as IWidget; 
 };
 interface UpdateWidgetArgs {
   name?: string;
@@ -489,9 +567,26 @@ export const incrementWidgetViews = async (id: string): Promise<IWidget | null> 
   return WidgetModel.findByIdAndUpdate(id, { $inc: { views: 1 } }, { new: true }).exec();
 };
 export const deleteWidget = async (id: string): Promise<{ acknowledged: boolean; deletedCount: number }> => {
-  await ensureDbConnected();
-  if (!Types.ObjectId.isValid(id)) return { acknowledged: false, deletedCount: 0 };
-  return WidgetModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
+  try {
+    await ensureDbConnected();
+    
+    // Validate ObjectId
+    if (!Types.ObjectId.isValid(id)) {
+      console.warn(`Invalid widget ID provided for deletion: ${id}`);
+      return { acknowledged: false, deletedCount: 0 };
+    }
+
+    // Delete widget from database
+    const result = await WidgetModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
+    
+    // Log deletion result
+    console.log(`Widget deletion result for ID ${id}:`, result);
+    
+    return result;
+  } catch (error) {
+    console.error('Error deleting widget:', error);
+    throw error;
+  }
 };
 export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStats> => {
   await ensureDbConnected();
@@ -507,31 +602,61 @@ export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStat
     };
   }
   const userObjId = new Types.ObjectId(userId);
-  const businessUrls = await BusinessUrlModel.find({ userId: userObjId }).lean().exec();
-  const totalBusinessUrls = businessUrls.length;
+  
+  // Get business URLs from both models
+  const [googleBusinessUrls, facebookBusinessUrls] = await Promise.all([
+    GoogleBusinessUrlModel.find({ userId: userObjId }).lean().exec(),
+    FacebookBusinessUrlModel.find({ userId: userObjId }).lean().exec()
+  ]);
+  
+  const totalBusinessUrls = googleBusinessUrls.length + facebookBusinessUrls.length;
   if (totalBusinessUrls === 0) {
     return {
       totalBusinessUrls: 0, totalWidgets: 0, totalReviews: 0,
       averageRating: 0, totalViews: 0, reviewsBySource: { google: 0, facebook: 0 },
     };
   }
-  const businessUrlObjectIds = businessUrls.map(b => b._id);
-  const reviewStats = await ReviewBatchModel.aggregate<ReviewStatItem>([
-    { $match: { businessUrlId: { $in: businessUrlObjectIds } } },
-    { $unwind: '$reviews' },
-    {
-      $group: {
-        _id: '$source',
-        totalReviewsInSource: { $sum: 1 },
-        sumOfRatings: { $sum: { $ifNull: ['$reviews.rating', 0] } }, 
-        countOfRatedReviews: { $sum: { $cond: [{ $isNumber: '$reviews.rating' }, 1, 0] } }, 
+  
+  const businessUrlObjectIds = [
+    ...googleBusinessUrls.map((b: { _id: Types.ObjectId }) => b._id),
+    ...facebookBusinessUrls.map((b: { _id: Types.ObjectId }) => b._id)
+  ];
+  
+  // Get review stats from both Google and Facebook review batches
+  const [googleReviewStats, facebookReviewStats] = await Promise.all([
+    GoogleReviewBatchModel.aggregate<ReviewStatItem>([
+      { $match: { businessUrlId: { $in: businessUrlObjectIds } } },
+      { $unwind: '$reviews' },
+      {
+        $group: {
+          _id: '$source',
+          totalReviewsInSource: { $sum: 1 },
+          sumOfRatings: { $sum: { $ifNull: ['$reviews.rating', 0] } }, 
+          countOfRatedReviews: { $sum: { $cond: [{ $isNumber: '$reviews.rating' }, 1, 0] } }, 
+        },
       },
-    },
-  ]).exec();
+    ]).exec(),
+    FacebookReviewBatchModel.aggregate<ReviewStatItem>([
+      { $match: { businessUrlId: { $in: businessUrlObjectIds } } },
+      { $unwind: '$reviews' },
+      {
+        $group: {
+          _id: '$source',
+          totalReviewsInSource: { $sum: 1 },
+          sumOfRatings: { $sum: { $ifNull: ['$reviews.rating', 0] } }, 
+          countOfRatedReviews: { $sum: { $cond: [{ $isNumber: '$reviews.rating' }, 1, 0] } }, 
+        },
+      },
+    ]).exec()
+  ]);
+
+  const reviewStats = [...googleReviewStats, ...facebookReviewStats];
+  
   let totalReviews = 0;
   let totalSumOfRatings = 0;
   let totalCountOfRatedReviews = 0;
   const reviewsBySource: { google: number; facebook: number } = { google: 0, facebook: 0 };
+  
   reviewStats.forEach((stat: ReviewStatItem) => { 
     totalReviews += stat.totalReviewsInSource || 0; 
     totalSumOfRatings += stat.sumOfRatings || 0;
@@ -542,6 +667,7 @@ export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStat
       reviewsBySource.facebook = stat.totalReviewsInSource || 0;
     }
   });
+  
   const averageRating = totalCountOfRatedReviews > 0 ? totalSumOfRatings / totalCountOfRatedReviews : 0;
   const totalWidgets = await WidgetModel.countDocuments({ userId: userObjId }).exec();
   interface WidgetViewAggItem {
@@ -567,24 +693,74 @@ export const getBusinessUrlStats = async (userId: string): Promise<IBusinessStat
 
 export const getReviewAggregates = async (businessUrlObjectId: string, source: 'google' | 'facebook') => {
   await ensureDbConnected();
-  const ReviewModelToUse = source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
-  const result = await ReviewModelToUse.aggregate([
+  const ModelToUse = source === 'google' ? GoogleReviewBatchModel : FacebookReviewBatchModel;
+  
+  const stats = await ModelToUse.aggregate([
     { $match: { businessUrlId: new Types.ObjectId(businessUrlObjectId) } },
     { $unwind: '$reviews' },
-    { $match: { 'reviews.rating': { $type: "number" } } }, 
     {
       $group: {
-        _id: '$businessUrlId',
+        _id: null,
         totalReviews: { $sum: 1 },
-        averageRating: { $avg: '$reviews.rating' }
+        sumOfRatings: { $sum: '$reviews.rating' },
+        countOfRatedReviews: {
+          $sum: { $cond: [{ $ifNull: ['$reviews.rating', false] }, 1, 0] }
+        }
       }
     }
-  ]);
-  if (result.length > 0) {
+  ]).exec();
+
+  return stats[0] || { totalReviews: 0, sumOfRatings: 0, countOfRatedReviews: 0 };
+};
+
+interface IGoogleBusinessUrl {
+  _id: Types.ObjectId;
+  name: string;
+  url: string;
+  userId: Types.ObjectId;
+}
+
+interface IFacebookBusinessUrl {
+  _id: Types.ObjectId;
+  name: string;
+  url: string;
+  userId: Types.ObjectId;
+}
+
+export const findBusinessUrlByUrl = async (url: string): Promise<IBusinessUrlDisplay | null> => {
+  await ensureDbConnected();
+  
+  // Try to find in Google Business URLs
+  const googleBusinessUrl = await GoogleBusinessUrlModel.findOne({ url }).lean().exec() as IGoogleBusinessUrl | null;
+  if (googleBusinessUrl) {
     return {
-      totalReviews: result[0].totalReviews,
-      averageRating: parseFloat(result[0].averageRating.toFixed(1)) || 0,
+      _id: googleBusinessUrl._id.toString(),
+      name: googleBusinessUrl.name,
+      url: googleBusinessUrl.url,
+      source: 'google'
     };
   }
-  return { totalReviews: 0, averageRating: 0 };
+
+  // Try to find in Facebook Business URLs
+  const facebookBusinessUrl = await FacebookBusinessUrlModel.findOne({ url }).lean().exec() as IFacebookBusinessUrl | null;
+  if (facebookBusinessUrl) {
+    return {
+      _id: facebookBusinessUrl._id.toString(),
+      name: facebookBusinessUrl.name,
+      url: facebookBusinessUrl.url,
+      source: 'facebook'
+    };
+  }
+
+  return null;
+};
+
+export const getWidgetsByBusinessUrlId = async (businessUrlId: string): Promise<IWidget[]> => {
+  await ensureDbConnected();
+  if (!Types.ObjectId.isValid(businessUrlId)) return [];
+  
+  return WidgetModel.find({ businessUrlId: new Types.ObjectId(businessUrlId) })
+    .sort({ createdAt: -1 })
+    .lean()
+    .exec();
 };

@@ -31,45 +31,47 @@ const WidgetCodeModal = ({ isOpen, onClose, widget }: WidgetCodeModalProps) => {
     ? window.location.origin
     : process.env.NEXT_PUBLIC_APP_URL || 'https://your-app-domain.com';
   
-  const javascriptCode = `<!-- ReviewHub Widget (Widget ID: ${widget._id}) -->
-  <div id="reviewhub-widget-${widget._id}"></div>
-  <script>
-    (function() {
-      var el = document.getElementById('reviewhub-widget-${widget._id}');
-      if (!el) { console.warn('ReviewHub: Container element for widget ${widget._id} not found.'); return; }
-      var script = document.createElement('script');
-      script.src = '${domain}/widget.js'; 
-      script.async = true;
-      script.defer = true; 
-      script.onload = function() {
+    const javascriptCode = `<div id="reviewhub-widget-${widget._id}"></div>
+    <script>
+      (function() {
+        var config = {
+          containerId: 'reviewhub-widget-${widget._id}',
+          widgetId: '${widget._id}'
+          ${widget.themeColor ? `, themeColor: '${widget.themeColor.replace(/'/g, "\\'")}'` : ''}
+          ${widget.layout ? `, layout: '${widget.layout.replace(/'/g, "\\'")}'` : ''}
+        };
+    
         if (window.ReviewHub && typeof window.ReviewHub.initWidget === 'function') {
-          window.ReviewHub.initWidget({
-            containerId: 'reviewhub-widget-${widget._id}', 
-            widgetId: '${widget._id}'
-            ${widget.themeColor ? `, themeColor: '${widget.themeColor}'` : ''}
-            ${widget.layout ? `, layout: '${widget.layout}'` : ''}
-          });
+          window.ReviewHub.initWidget(config);
         } else {
-          console.error('ReviewHub: widget.js loaded but ReviewHub.initWidget is not available.');
+          window.ReviewHubPendingWidgets = window.ReviewHubPendingWidgets || [];
+          window.ReviewHubPendingWidgets.push(config);
+    
+          if (!document.querySelector('script[src="${domain}/widget.js"]')) {
+            var script = document.createElement('script');
+            script.src = '${domain}/widget.js';
+            script.async = true;
+            script.defer = true;
+            script.onerror = function() {
+              console.error('ReviewHub: Failed to load widget.js from ${domain}/widget.js. Ensure the main ReviewHub application is running and accessible.');
+              var el = document.getElementById(config.containerId);
+              if(el) el.innerHTML = '<p style="color:red; text-align:center;">Error loading review widget.</p>';
+            };
+            document.head.appendChild(script);
+          }
         }
-      };
-      script.onerror = function() {
-        console.error('ReviewHub: Failed to load widget.js from ${domain}/widget.js');
-      };
-      document.head.appendChild(script);
-    })();
-  </script>`;
+      })();
+    </script>`;
 
-  const iframeCode = `<!-- ReviewHub Widget (Widget ID: ${widget._id}) -->
+  const iframeCode = `
   <iframe
     src="${domain}/embed/widget/${widget._id}"
-    style="width: 100%; min-height: 400px; border: none; overflow: hidden;" /* Added min-height */
+    style="width: 100%; min-height: 400px; border: none; overflow: hidden;"
     title="${widget.name || 'Review Widget'}"
     loading="lazy"
-    allowtransparency="true" /* Deprecated but often harmless */
-    frameborder="0" /* For older browsers */
-  ></iframe>
-  <!-- End ReviewHub Widget -->`;
+    allowtransparency="true"
+    frameborder="0" 
+  ></iframe>`;
 
   // Handle copy to clipboard
   const handleCopyCode = () => {

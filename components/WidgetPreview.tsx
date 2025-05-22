@@ -7,8 +7,7 @@ import {
   CarouselContent,
   CarouselItem,
   CarouselPrevious,
-  CarouselNext,
-  type CarouselApi
+  CarouselNext
 } from "./ui/carousel";
 
 export interface IReviewItemFromAPI {
@@ -41,19 +40,26 @@ export interface IWidgetSettingsFromForm {
 interface WidgetPreviewProps {
   widget: IWidgetSettingsFromForm; 
   reviews: IReviewItemFromAPI[];
+  isLoadingReviews?: boolean;
 }
 
 const WidgetPreview = ({ 
   widget, 
-  reviews 
+  reviews,
+  isLoadingReviews = false 
 }: WidgetPreviewProps) => {
   const settings = widget;
   const MAX_PREVIEW_ITEMS = widget.maxReviews || 10;
 
+
   const filteredReviews = useMemo(() => {
+    if (!Array.isArray(reviews)) {
+      console.warn("[WidgetPreview] 'reviews' prop is not an array, returning empty for filteredReviews. Received:", reviews);
+      return [];
+    }
     return reviews
       .filter(review => review.rating === undefined || review.rating === null || review.rating >= settings.minRating)
-      .slice(0, MAX_PREVIEW_ITEMS); 
+      .slice(0, MAX_PREVIEW_ITEMS);
   }, [reviews, settings.minRating, MAX_PREVIEW_ITEMS]);
 
   const avgRating = useMemo(() => {
@@ -63,16 +69,10 @@ const WidgetPreview = ({
   }, [filteredReviews]);
 
   const colorStyle = { "--widget-theme-color": settings.themeColor || "#3B82F6" } as React.CSSProperties;
-
   const source = settings.businessUrl?.source || "google";
   const businessName = settings.businessUrl?.name || "Business Name";
   const sourceIcon = source === 'google' ? 'fab fa-google' : 'fab fa-facebook-f';
-  const sourceIconColor = source === 'google' ? 'text-red-500' : 'text-blue-600';
-
- const getReviewKey = (review: IReviewItemFromAPI, index: number): string => {
-    return review._id || review.reviewId || `review-${index}`;
-  };
-
+  const getReviewKey = (review: IReviewItemFromAPI, index: number): string => review._id || review.reviewId || `review-${index}`;
   const displaySettingsForCard = {
     showRatings: settings.showRatings,
     showDates: settings.showDates,
@@ -87,6 +87,18 @@ const WidgetPreview = ({
         <p className="text-sm">Try adjusting the minimum rating in the settings.</p>
     </div>
   );
+
+if (!isLoadingReviews && filteredReviews.length === 0 && settings.layout !== 'badge') { // Use the prop
+    return (
+        <div style={colorStyle} className="border border-border rounded-lg p-6 bg-card text-card-foreground text-center min-h-[200px] flex flex-col justify-center items-center">
+            <i className="fas fa-star text-3xl text-muted-foreground mb-4"></i>
+            <h4 className="font-semibold text-lg text-foreground">No Reviews Match Filters</h4>
+            <p className="text-sm text-muted-foreground">
+                Try adjusting the minimum rating or this source has no reviews that meet the criteria.
+            </p>
+        </div>
+    );
+  }
   return (
     <div 
       className="w-full max-w-full border border-border rounded-lg p-3 sm:p-4 bg-card text-card-foreground transition-theme"
@@ -123,14 +135,20 @@ const WidgetPreview = ({
           )}
         </div>
       )}
-      {filteredReviews.length === 0 && settings.layout !== 'badge' && <NoFilteredReviews />}
       {settings.layout === 'grid' && filteredReviews.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"> 
-          {filteredReviews.map((review, index) => (
-            <SingleReviewCard key={getReviewKey(review, index)} review={review} displaySettings={displaySettingsForCard} sourcePlatform={source} />
-          ))}
-        </div>
-      )}
+      <>
+          {isLoadingReviews && filteredReviews.length === 0 && <p className="text-center text-muted-foreground">Loading reviews...</p>}
+          {!isLoadingReviews && filteredReviews.length === 0 && <NoFilteredReviews />}
+          {filteredReviews.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {filteredReviews.map((review, index) => (
+                <SingleReviewCard key={getReviewKey(review, index)} review={review} displaySettings={displaySettingsForCard} sourcePlatform={source} />
+              ))}
+            </div>
+          )}
+      </>
+      )
+      }
       {settings.layout === 'carousel' && filteredReviews.length > 0 && (
         <Carousel
           opts={{ align: "start", loop: filteredReviews.length > (filteredReviews.length < 3 ? 1 : 2) }} 
@@ -199,7 +217,7 @@ const WidgetPreview = ({
                   <div className="rounded-full bg-[var(--widget-theme-color)] text-white text-lg w-8 h-8 flex items-center justify-center mr-2 font-bold">
                     {formatRating(avgRating)}
                   </div>
-                  <Rating value={avgRating} size="md" readOnly color={settings.themeColor} />
+                  <Rating value={avgRating} size="default" color={settings.themeColor} />
                 </div>
                 <div className="text-xs font-medium text-muted-foreground">
                   Based on {filteredReviews.length} review{filteredReviews.length !== 1 && 's'}
